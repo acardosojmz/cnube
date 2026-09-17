@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cloud Challenge - El Juego de Parejas Cloud</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link href="cloud_challenge.css" rel="stylesheet">  
+</head>
+<body>
+
+    <header>
+        <h1>Cloud Challenge</h1>
+        <p class="subtitle">Asocia cada concepto, modelo o servicio de la nube con su definición técnica correspondiente</p>
+    </header>
+
+    <div class="dashboard">
+        <div class="stat-box">
+            <span class="stat-label">Movimientos</span>
+            <span class="stat-value" id="moves">0</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-label">Parejas</span>
+            <span class="stat-value" id="matches">0 / 8</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-label">Tiempo</span>
+            <span class="stat-value" id="timer">00:00</span>
+        </div>
+        <button class="btn-reset" onclick="initGame()">Reiniciar</button>
+    </div>
+
+    <div class="grid-container" id="grid"></div>
+
+    <div class="modal" id="victoryModal">
+        <div class="modal-content">
+            <h2>¡Misión Cumplida! ☁️</h2>
+            <p>Has dominado los conceptos fundamentales de la Computación en la Nube y Gobierno Inicial.</p>
+            <div style="margin-bottom: 20px;">
+                <p style="margin-bottom: 5px;">Tiempo final: <b id="finalTime" style="color: var(--accent-cyan);"></b></p>
+                <p>Movimientos totales: <b id="finalMoves" style="color: var(--accent-cyan);"></b></p>
+            </div>
+            <button class="btn-reset" onclick="closeModal()">Jugar de Nuevo</button>
+        </div>
+    </div>
+    <script src="cloud_challenge.js" type="text/javascript"></script>
+
+  
+</body>
+</html>

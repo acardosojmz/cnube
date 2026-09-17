@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AWS Cloud Architecture Challenge - Menú Principal (5 Días)</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Inter Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            aws: {
+              squid: '#232f3e',
+              dark: '#0f172a',
+              orange: '#ff9900',
+              orangeHover: '#ec7211',
+              blue: '#0073bb',
+              lightBlue: '#00a4e4',
+              green: '#10b981',
+              red: '#ef4444',
+              grayCard: '#1e293b'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #ff9900;
+    }
+
+    .card-glow:hover {
+      box-shadow: 0 0 20px rgba(255, 153, 0, 0.15);
+      border-color: rgba(255, 153, 0, 0.4);
+    }
+
+    .grid-bg {
+      background-size: 30px 30px;
+      background-image: radial-gradient(circle, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    }
+  </style>
+</head>
+
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col antialiased select-none grid-bg">
+
+  <header class="bg-aws-squid border-b border-slate-800 px-4 md:px-8 py-3 sticky top-0 z-50 flex flex-wrap items-center justify-between gap-4 shadow-xl">
+    <div class="flex items-center space-x-3">
+      <div class="bg-aws-orange text-slate-950 p-2.5 rounded-xl font-black text-2xl flex items-center justify-center shadow-lg shadow-orange-500/20">
+        <i class="fa-solid fa-cloud"></i>
+      </div>
+      <div>
+        <h1 class="text-xl font-extrabold text-white leading-tight flex items-center gap-2">
+          AWS Architecture Challenge
+          <span class="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">Programa de 5 Días</span>
+        </h1>
+        <p class="text-xs text-slate-400">Portal de Juegos Interactivos y Laboratorios de Infraestructura Cloud</p>
+      </div>
+    </div>
+
+    <!-- Quick Stats & Tools -->
+    <div class="flex items-center flex-wrap gap-3">
+      <div class="flex items-center gap-3 text-xs bg-slate-900/90 px-3.5 py-2 rounded-lg border border-slate-800 shadow-inner">
+        <div class="flex items-center gap-1.5" title="Días Completados">
+          <i class="fa-solid fa-trophy text-amber-400"></i>
+          <span class="text-slate-400">Progreso:</span>
+          <span id="overallProgressText" class="font-bold text-amber-400">0 / 5</span>
+        </div>
+        <div class="h-3 w-px bg-slate-700"></div>
+        <div class="flex items-center gap-1.5">
+          <i class="fa-solid fa-graduation-cap text-emerald-400"></i>
+          <span id="overallSLA" class="font-bold text-emerald-400">0% Completado</span>
+        </div>
+      </div>
+
+      <button onclick="toggleCheatSheet()" class="px-3.5 py-2 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/30 rounded-lg text-xs font-semibold flex items-center gap-2 transition">
+        <i class="fa-solid fa-book-open"></i> Guía Global AWS
+      </button>
+
+      <button onclick="resetProgress()" class="px-3 py-2 bg-slate-800 hover:bg-rose-900/40 text-slate-400 hover:text-rose-300 border border-slate-700 hover:border-rose-700/50 rounded-lg text-xs font-semibold transition" title="Reiniciar Progreso">
+        <i class="fa-solid fa-rotate-left"></i>
+      </button>
+    </div>
+  </header>
+
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-8 space-y-8">
+    
+    <!-- Hero Section Banner -->
+    <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-aws-squid to-slate-900 border border-slate-800 p-6 md:p-8 shadow-2xl">
+      <div class="relative z-10 max-w-3xl space-y-3">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-aws-orange/10 border border-aws-orange/30 text-aws-orange text-xs font-bold">
+          <i class="fa-solid fa-layer-group"></i> Ruta de Aprendizaje Práctico
+        </div>
+        <h2 class="text-2xl md:text-3xl font-extrabold text-white tracking-tight">
+          Aprende Arquitectura AWS Construyendo Soluciones Reales
+        </h2>
+        <p class="text-sm text-slate-300 leading-relaxed">
+          Selecciona cada día para acceder a su respectivo laboratorio interactivo. Diseña topologías de red, implementa balanceadores de carga, gestiona almacenamiento en bloques y objetos, y prepara tu infraestructura para soportar pruebas de caos.
+        </p>
+
+        <!-- Dynamic Overall Progress Bar -->
+        <div class="pt-2">
+          <div class="flex justify-between text-xs font-semibold mb-1 text-slate-400">
+            <span>Avance General del Taller</span>
+            <span id="progressBarPercentage" class="text-amber-400">0%</span>
+          </div>
+          <div class="w-full bg-slate-950 rounded-full h-3 overflow-hidden border border-slate-800 p-0.5">
+            <div id="mainProgressBar" class="bg-gradient-to-r from-amber-500 via-aws-orange to-emerald-400 h-full rounded-full transition-all duration-700 w-0"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Decorative Background Grid Icon -->
+      <div class="absolute right-[-20px] bottom-[-20px] opacity-10 text-slate-100 text-[200px] pointer-events-none">
+        <i class="fa-solid fa-server"></i>
+      </div>
+    </div>
+
+    <div class="space-y-4">
+      <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3">
+        <h3 class="text-base font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+          <i class="fa-solid fa-calendar-days text-aws-orange"></i> Módulos por Día (Día 1 al Día 5)
+        </h3>
+        <span class="text-xs text-slate-400">Haz clic en <strong>"Ingresar al Juego"</strong> para abrir cada reto</span>
+      </div>
+
+      <!-- 5 Days Grid -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+        <!-- DÍA 1 CARD -->
+        <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-5 flex flex-col justify-between transition-all duration-300 card-glow relative group">
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-extrabold px-2.5 py-1 rounded bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 uppercase tracking-wider">Día 1</span>
+              <button onclick="toggleDayCompleted(1)" id="check-1" class="text-slate-600 hover:text-emerald-400 text-lg transition" title="Marcar como completado">
+                <i class="fa-regular fa-circle-check"></i>
+              </button>
+            </div>
+
+            <div class="flex items-start gap-3">
+              <div class="w-10 h-10 rounded-lg bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400 text-xl font-bold shrink-0">
+                <i class="fa-solid fa-cloud"></i>
+              </div>
+              <div>
+                <h4 class="text-base font-bold text-white group-hover:text-amber-400 transition">Día 1: Fundamentos & Gobierno Inicial</h4>
+                <p class="text-xs text-slate-400 mt-1">Fundamentos de la Computación en la Nube y Gobierno Inicial de la Plataforma Cloud.</p>
+              </div>
+            </div>
+
+            <div class="bg-slate-950/60 p-2.5 rounded-lg border border-slate-800 text-[11px] text-slate-300 space-y-1">
+              <div class="flex items-center gap-1.5 text-indigo-300 font-semibold">
+                <i class="fa-solid fa-check text-xs"></i> Conceptos Clave:
+              </div>
+              <ul class="list-disc list-inside text-slate-400 space-y-0.5 pl-1">
+                <li>Modelos de Nube & Responsabilidad Compartida</li>
+                <li>Gestión de Identidades y Accesos (AWS IAM)</li>
+                <li>Estrategias de Gobierno, Presupuestos y Alertas</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="pt-4 mt-4 border-t border-slate-800/80 flex items-center gap-2">
+            <a href="dia_1.html" class="flex-1 py-2.5 bg-aws-orange hover:bg-aws-orangeHover text-slate-950 font-extrabold rounded-lg text-xs text-center transition shadow-md flex items-center justify-center gap-2">
+              <i class="fa-solid fa-play"></i> Entrar a Día 1
+            </a>
+            <button onclick="openDetailModal(1)" class="p-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs" title="Detalles del Módulo">
+              <i class="fa-solid fa-circle-info"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- DÍA 2 CARD -->
+        <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-5 flex flex-col justify-between transition-all duration-300 card-glow relative group">
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-extrabold px-2.5 py-1 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 uppercase tracking-wider">Día 2</span>
+              <button onclick="toggleDayCompleted(2)" id="check-2" class="text-slate-600 hover:text-emerald-400 text-lg transition" title="Marcar como completado">
+                <i class="fa-regular fa-circle-check"></i>
+              </button>
+            </div>
+
+            <div class="flex items-start gap-3">
+              <div class="w-10 h-10 rounded-lg bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 text-xl font-bold shrink-0">
+                <i class="fa-solid fa-server"></i>
+              </div>
+              <div>
+                <h4 class="text-base font-bold text-white group-hover:text-amber-400 transition">Día 2: Infraestructura como Servicio (IaaS)</h4>
+                <p class="text-xs text-slate-400 mt-1">Implementación y Administración de Recursos de Cómputo en AWS.</p>
+              </div>
+            </div>
+
+            <div class="bg-slate-950/60 p-2.5 rounded-lg border border-slate-800 text-[11px] text-slate-300 space-y-1">
+              <div class="flex items-center gap-1.5 text-emerald-300 font-semibold">
+                <i class="fa-solid fa-check text-xs"></i> Conceptos Clave:
+              </div>
+              <ul class="list-disc list-inside text-slate-400 space-y-0.5 pl-1">
+                <li>Instancias EC2, AMIs y Familias de Cómputo</li>
+                <li>Almacenamiento de Bloques Amazon EBS & Snapshots</li>
+                <li>Pares de Llaves (Key Pairs) y Security Groups</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="pt-4 mt-4 border-t border-slate-800/80 flex items-center gap-2">
+            <a href="dia_2.html" class="flex-1 py-2.5 bg-aws-orange hover:bg-aws-orangeHover text-slate-950 font-extrabold rounded-lg text-xs text-center transition shadow-md flex items-center justify-center gap-2">
+              <i class="fa-solid fa-play"></i> Entrar a Día 2
+            </a>
+            <button onclick="openDetailModal(2)" class="p-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs" title="Detalles del Módulo">
+              <i class="fa-solid fa-circle-info"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- DÍA 3 CARD -->
+        <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-5 flex flex-col justify-between transition-all duration-300 card-glow relative group">
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-extrabold px-2.5 py-1 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30 uppercase tracking-wider">Día 3</span>
+              <button onclick="toggleDayCompleted(3)" id="check-3" class="text-slate-600 hover:text-emerald-400 text-lg transition" title="Marcar como completado">
+                <i class="fa-regular fa-circle-check"></i>
+              </button>
+            </div>
+
+            <div class="flex items-start gap-3">
+              <div class="w-10 h-10 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 text-xl font-bold shrink-0">
+                <i class="fa-solid fa-network-wired"></i>
+              </div>
+              <div>
+                <h4 class="text-base font-bold text-white group-hover:text-amber-400 transition">Día 3: Redes, Almacenamiento & DNS</h4>
+                <p class="text-xs text-slate-400 mt-1">Redes, Almacenamiento y Publicación de Servicios en la Nube.</p>
+              </div>
+            </div>
+
+            <div class="bg-slate-950/60 p-2.5 rounded-lg border border-slate-800 text-[11px] text-slate-300 space-y-1">
+              <div class="flex items-center gap-1.5 text-amber-300 font-semibold">
+                <i class="fa-solid fa-check text-xs"></i> Conceptos Clave:
+              </div>
+              <ul class="list-disc list-inside text-slate-400 space-y-0.5 pl-1">
+                <li>Arquitectura VPC, Subredes Públicas/Privadas & IGW</li>
+                <li>Amazon S3 para Almacenamiento de Objetos</li>
+                <li>Route 53 (DNS) & Application Load Balancers (ALB)</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="pt-4 mt-4 border-t border-slate-800/80 flex items-center gap-2">
+            <a href="dia_3.html" class="flex-1 py-2.5 bg-aws-orange hover:bg-aws-orangeHover text-slate-950 font-extrabold rounded-lg text-xs text-center transition shadow-md flex items-center justify-center gap-2">
+              <i class="fa-solid fa-play"></i> Entrar a Día 3
+            </a>
+            <button onclick="openDetailModal(3)" class="p-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs" title="Detalles del Módulo">
+              <i class="fa-solid fa-circle-info"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- DÍA 4 CARD -->
+        <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-5 flex flex-col justify-between transition-all duration-300 card-glow relative group">
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-extrabold px-2.5 py-1 rounded bg-sky-500/20 text-sky-400 border border-sky-500/30 uppercase tracking-wider">Día 4</span>
+              <button onclick="toggleDayCompleted(4)" id="check-4" class="text-slate-600 hover:text-emerald-400 text-lg transition" title="Marcar como completado">
+                <i class="fa-regular fa-circle-check"></i>
+              </button>
+            </div>
+
+            <div class="flex items-start gap-3">
+              <div class="w-10 h-10 rounded-lg bg-sky-500/10 border border-sky-500/30 flex items-center justify-center text-sky-400 text-xl font-bold shrink-0">
+                <i class="fa-solid fa-chart-line"></i>
+              </div>
+              <div>
+                <h4 class="text-base font-bold text-white group-hover:text-amber-400 transition">Día 4: Monitoreo, Seguridad & Optimización</h4>
+                <p class="text-xs text-slate-400 mt-1">Administración, Monitoreo, Seguridad y Optimización de Infraestructuras Cloud.</p>
+              </div>
+            </div>
+
+            <div class="bg-slate-950/60 p-2.5 rounded-lg border border-slate-800 text-[11px] text-slate-300 space-y-1">
+              <div class="flex items-center gap-1.5 text-sky-300 font-semibold">
+                <i class="fa-solid fa-check text-xs"></i> Conceptos Clave:
+              </div>
+              <ul class="list-disc list-inside text-slate-400 space-y-0.5 pl-1">
+                <li>Amazon CloudWatch (Métricas, Logs & Alarmas)</li>
+                <li>Escalado Automático con Auto Scaling Groups (ASG)</li>
+                <li>Optimización de Costos y Best Practices de Seguridad</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="pt-4 mt-4 border-t border-slate-800/80 flex items-center gap-2">
+            <a href="dia_4.html" class="flex-1 py-2.5 bg-aws-orange hover:bg-aws-orangeHover text-slate-950 font-extrabold rounded-lg text-xs text-center transition shadow-md flex items-center justify-center gap-2">
+              <i class="fa-solid fa-play"></i> Entrar a Día 4
+            </a>
+            <button onclick="openDetailModal(4)" class="p-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs" title="Detalles del Módulo">
+              <i class="fa-solid fa-circle-info"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- DÍA 5 CARD -->
+        <div class="bg-slate-900/90 border border-slate-800 rounded-xl p-5 flex flex-col justify-between transition-all duration-300 card-glow relative group">
+          <div class="space-y-3">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-extrabold px-2.5 py-1 rounded bg-purple-500/20 text-purple-400 border border-purple-500/30 uppercase tracking-wider">Día 5</span>
+              <button onclick="toggleDayCompleted(5)" id="check-5" class="text-slate-600 hover:text-emerald-400 text-lg transition" title="Marcar como completado">
+                <i class="fa-regular fa-circle-check"></i>
+              </button>
+            </div>
+
+            <div class="flex items-start gap-3">
+              <div class="w-10 h-10 rounded-lg bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400 text-xl font-bold shrink-0">
+                <i class="fa-solid fa-chess-king"></i>
+              </div>
+              <div>
+                <h4 class="text-base font-bold text-white group-hover:text-amber-400 transition">Día 5: Estrategia de Adopción Cloud</h4>
+                <p class="text-xs text-slate-400 mt-1">Integración, Presentación y Defensa de una Estrategia de Adopción de Computación en la Nube.</p>
+              </div>
+            </div>
+
+            <div class="bg-slate-950/60 p-2.5 rounded-lg border border-slate-800 text-[11px] text-slate-300 space-y-1">
+              <div class="flex items-center gap-1.5 text-purple-300 font-semibold">
+                <i class="fa-solid fa-check text-xs"></i> Conceptos Clave:
+              </div>
+              <ul class="list-disc list-inside text-slate-400 space-y-0.5 pl-1">
+                <li>AWS Well-Architected Framework</li>
+                <li>Infraestructura como Código (CloudFormation / IaC)</li>
+                <li>Presentación & Defensa del Proyecto Integrador</li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="pt-4 mt-4 border-t border-slate-800/80 flex items-center gap-2">
+            <a href="dia_5.html" class="flex-1 py-2.5 bg-aws-orange hover:bg-aws-orangeHover text-slate-950 font-extrabold rounded-lg text-xs text-center transition shadow-md flex items-center justify-center gap-2">
+              <i class="fa-solid fa-play"></i> Entrar a Día 5
+            </a>
+            <button onclick="openDetailModal(5)" class="p-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs" title="Detalles del Módulo">
+              <i class="fa-solid fa-circle-info"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- QUICK SUMMARY CARD -->
+        <div class="bg-gradient-to-br from-slate-900 via-slate-900 to-aws-squid/80 border border-amber-500/30 rounded-xl p-5 flex flex-col justify-between shadow-xl">
+          <div class="space-y-3">
+            <div class="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
+              <i class="fa-solid fa-award"></i> Certificación del Taller
+            </div>
+            <h4 class="text-base font-bold text-white">Consigue el 100% de los Retos</h4>
+            <p class="text-xs text-slate-300">Completa la simulación de los 5 días para desbloquear el reconocimiento de Arquitecto AWS Cloud.</p>
+            
+            <div class="space-y-2 pt-1 text-xs">
+              <div class="flex justify-between text-slate-400">
+                <span>Días Marcados:</span>
+                <span id="summaryDays" class="font-bold text-white">0 / 5</span>
+              </div>
+              <div class="flex justify-between text-slate-400">
+                <span>Nivel Alcanzado:</span>
+                <span id="summaryBadge" class="font-bold text-amber-400">Principiante</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="pt-4 mt-4 border-t border-slate-800 flex items-center gap-2">
+            <button onclick="markAllCompleted()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 rounded-lg text-xs font-semibold transition flex items-center justify-center gap-2">
+              <i class="fa-solid fa-check-double text-emerald-400"></i> Marcar Todos como Hechos
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- MODAL: Day Detail Information -->
+  <div id="dayDetailModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+        <h3 id="modalDayTitle" class="text-base font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-cloud text-aws-orange"></i> Detalles del Módulo
+        </h3>
+        <button onclick="closeDetailModal()" class="text-slate-400 hover:text-white text-lg"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div id="modalDayBody" class="space-y-3 text-xs text-slate-300">
+        <!-- Populated via JavaScript -->
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2 border-t border-slate-800">
+        <button onclick="closeDetailModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-lg text-xs">Cerrar</button>
+        <a id="modalPlayBtn" href="#" class="px-4 py-2 bg-aws-orange hover:bg-aws-orangeHover text-slate-950 font-extrabold rounded-lg text-xs transition flex items-center gap-1.5">
+          <i class="fa-solid fa-play"></i> Iniciar Juego
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: AWS Reference Cheat Sheet -->
+  <div id="cheatSheetModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col p-6 shadow-2xl space-y-4">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+        <h3 class="text-base font-bold text-amber-400 flex items-center gap-2">
+          <i class="fa-solid fa-book-open"></i> Guía Global de Arquitectura AWS (5 Días)
+        </h3>
+        <button onclick="toggleCheatSheet()" class="text-slate-400 hover:text-white text-lg"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="flex-1 overflow-y-auto space-y-4 text-xs text-slate-300 pr-2">
+        <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800 space-y-1">
+          <div class="font-bold text-indigo-400 text-sm">Día 1: Fundamentos de la Computación en la Nube y Gobierno Inicial</div>
+          <p>Comprensión del modelo de responsabilidad compartida, modelos de servicio (IaaS, PaaS, SaaS), gobernanza multi-cuenta con AWS IAM, presupuestos (AWS Budgets) y alertas de costos.</p>
+        </div>
+
+        <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800 space-y-1">
+          <div class="font-bold text-emerald-400 text-sm">Día 2: Infraestructura como Servicio (IaaS): Recursos en AWS</div>
+          <p>Despliegue y administración de cómputo elástico con Amazon EC2, selección de imágenes AMIs, aprovisionamiento de volúmenes de bloque Amazon EBS, gestión de llaves SSH y Security Groups.</p>
+        </div>
+
+        <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800 space-y-1">
+          <div class="font-bold text-amber-400 text-sm">Día 3: Redes, Almacenamiento y Publicación de Servicios</div>
+          <p>Diseño de redes virtuales privadas (VPC), subredes públicas y privadas, balanceo de carga (ALB) Multi-AZ, resolución de nombres en Route 53 y almacenamiento masivo de objetos en Amazon S3.</p>
+        </div>
+
+        <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800 space-y-1">
+          <div class="font-bold text-sky-400 text-sm">Día 4: Administración, Monitoreo, Seguridad y Optimización</div>
+          <p>Observabilidad de la infraestructura con Amazon CloudWatch (métricas y alarmas), escalado automático mediante Auto Scaling Groups (ASG), auditoría y optimización financiera de costos.</p>
+        </div>
+
+        <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800 space-y-1">
+          <div class="font-bold text-purple-400 text-sm">Día 5: Integración, Presentación y Defensa de Estrategia Cloud</div>
+          <p>Construcción de soluciones bajo el marco AWS Well-Architected Framework, automatización declarativa de infraestructura (IaC) y sustentación de la propuesta de adopción empresarial.</p>
+        </div>
+      </div>
+
+      <div class="flex justify-end pt-2 border-t border-slate-800">
+        <button onclick="toggleCheatSheet()" class="px-5 py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded-lg text-xs">Entendido</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // LocalStorage State for Tracking 5-Day Completion
+    let completedDays = JSON.parse(localStorage.getItem('aws_challenge_completed_days')) || [false, false, false, false, false];
+
+    const daysDetails = {
+      1: {
+        title: "Día 1: Fundamentos de la Computación en la Nube y Gobierno Inicial de la Plataforma Cloud",
+        link: "dia_1.html",
+        desc: "Módulo introductorio enfocado en comprender los pilares de la nube, el modelo de responsabilidad compartida, la creación y aseguramiento de usuarios en AWS IAM, y la definición de reglas de presupuesto y control financiero inicial."
+      },
+      2: {
+        title: "Día 2: Infraestructura como Servicio (IaaS): Implementación y Administración de Recursos en AWS",
+        link: "dia_2.html",
+        desc: "Aprende a desplegar servidores virtuales con Amazon EC2, administrar el ciclo de vida de volúmenes de almacenamiento en bloque Amazon EBS, gestionar llaves SSH y configurar reglas de acceso con Security Groups."
+      },
+      3: {
+        title: "Día 3: Redes, Almacenamiento y Publicación de Servicios en la Nube",
+        link: "dia_3.html",
+        desc: "Diseña la topología de red en AWS con Amazon VPC (subredes públicas y privadas), distribuye tráfico web con Application Load Balancers (ALB), gestiona la resolución de nombres en Route 53 y almacena archivos estáticos en Amazon S3."
+      },
+      4: {
+        title: "Día 4: Administración, Monitoreo, Seguridad y Optimización de Infraestructuras Cloud",
+        link: "dia_4.html",
+        desc: "Implementa observabilidad total con Amazon CloudWatch (métricas y alertas), configura elastización automática de la flota con Auto Scaling Groups (ASG) y aplica prácticas de optimización de costos y seguridad de la infraestructura."
+      },
+      5: {
+        title: "Día 5: Integración, Presentación y Defensa de una Estrategia de Adopción de Computación en la Nube",
+        link: "dia_5.html",
+        desc: "El proyecto integrador final: orquestación de la arquitectura completa bajo el marco AWS Well-Architected Framework, despliegue mediante Infraestructura como Código (IaC) y presentación ejecutiva/defensa de la estrategia de adopción empresarial."
+      }
+    };
+
+    function updateUIProgress() {
+      let count = 0;
+      for (let i = 1; i <= 5; i++) {
+        const isDone = completedDays[i - 1];
+        const btn = document.getElementById(`check-${i}`);
+        if (isDone) {
+          count++;
+          if (btn) {
+            btn.className = "text-emerald-400 hover:text-emerald-300 text-lg transition";
+            btn.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
+          }
+        } else {
+          if (btn) {
+            btn.className = "text-slate-600 hover:text-emerald-400 text-lg transition";
+            btn.innerHTML = '<i class="fa-regular fa-circle-check"></i>';
+          }
+        }
+      }
+
+      const percent = Math.round((count / 5) * 100);
+      
+      document.getElementById('overallProgressText').innerText = `${count} / 5`;
+      document.getElementById('overallSLA').innerText = `${percent}% Completado`;
+      document.getElementById('progressBarPercentage').innerText = `${percent}%`;
+      document.getElementById('mainProgressBar').style.width = `${percent}%`;
+      document.getElementById('summaryDays').innerText = `${count} / 5`;
+
+      let badge = "Principiante";
+      if (count === 5) badge = "Master Cloud Architect 🏆";
+      else if (count >= 3) badge = "Arquitecto Intermedio 🚀";
+      else if (count >= 1) badge = "Iniciado Cloud ⚡";
+
+      document.getElementById('summaryBadge').innerText = badge;
+
+      // Save state
+      localStorage.setItem('aws_challenge_completed_days', JSON.stringify(completedDays));
+    }
+
+    function toggleDayCompleted(dayNum) {
+      completedDays[dayNum - 1] = !completedDays[dayNum - 1];
+      updateUIProgress();
+    }
+
+    function markAllCompleted() {
+      completedDays = [true, true, true, true, true];
+      updateUIProgress();
+    }
+
+    function resetProgress() {
+      completedDays = [false, false, false, false, false];
+      updateUIProgress();
+    }
+
+    function openDetailModal(dayNum) {
+      const data = daysDetails[dayNum];
+      if (!data) return;
+
+      document.getElementById('modalDayTitle').innerText = data.title;
+      document.getElementById('modalDayBody').innerText = data.desc;
+      document.getElementById('modalPlayBtn').href = data.link;
+
+      document.getElementById('dayDetailModal').classList.remove('hidden');
+    }
+
+    function closeDetailModal() {
+      document.getElementById('dayDetailModal').classList.add('hidden');
+    }
+
+    function toggleCheatSheet() {
+      const modal = document.getElementById('cheatSheetModal');
+      modal.classList.toggle('hidden');
+    }
+
+    // Initialize UI on load
+    window.onload = function() {
+      updateUIProgress();
+    };
+  </script>
+</body>
+</html>

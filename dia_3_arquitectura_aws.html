@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Construye la Mejor Arquitectura AWS - Juego Educativo</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- Inter Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            aws: {
+              squid: '#232f3e',
+              dark: '#0f172a',
+              orange: '#ff9900',
+              orangeHover: '#ec7211',
+              blue: '#0073bb',
+              lightBlue: '#00a4e4',
+              green: '#10b981',
+              red: '#ef4444',
+              grayCard: '#1e293b'
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #ff9900;
+    }
+    
+    .canvas-grid {
+      background-size: 24px 24px;
+      background-image: radial-gradient(circle, rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+    }
+
+    .pulsing-node {
+      animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.85; transform: scale(1.02); }
+    }
+
+    .traffic-particle {
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 30;
+      box-shadow: 0 0 8px currentColor;
+    }
+  </style>
+</head>
+
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col antialiased select-none overflow-x-hidden">
+
+  <!-- Top Header Navigation Bar -->
+  <header class="bg-aws-squid border-b border-slate-800 px-4 py-3 sticky top-0 z-50 flex flex-wrap items-center justify-between gap-4 shadow-lg">
+    <div class="flex items-center space-x-3">
+      <div class="bg-aws-orange text-slate-950 p-2 rounded-lg font-black text-xl flex items-center justify-center shadow-md shadow-orange-500/20">
+        <i class="fa-solid me-1 fa-cloud"></i> AWS
+      </div>
+      <div>
+        <h1 class="text-lg font-bold text-white leading-tight flex items-center gap-2">
+          Construye la Mejor Arquitectura
+          <span class="text-xs font-semibold px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">Dia 3</span>
+        </h1>
+        <p class="text-xs text-slate-400">Redes, Almacenamiento, DNS Route 53 y Balanceo de Carga</p>
+      </div>
+    </div>
+
+    <!-- Level Controls & Metrics Header -->
+    <div class="flex items-center flex-wrap gap-3">
+      <!-- Selector de Nivel -->
+      <div class="flex items-center bg-slate-900 border border-slate-700 rounded-lg p-1">
+        <span class="text-xs text-slate-400 px-2 font-medium"><i class="fa-solid fa-trophy text-amber-400 mr-1"></i>Nivel:</span>
+        <select id="levelSelect" onchange="changeLevel(this.value)" class="bg-slate-800 text-xs font-bold text-amber-400 rounded px-2 py-1 focus:outline-none border border-slate-700 cursor-pointer">
+          <option value="1">1: Sitio Web & DNS Route 53</option>
+          <option value="2">2: Alta Disponibilidad con ALB</option>
+          <option value="3">3: Almacenamiento EBS y S3 Sync</option>
+          <option value="4">4: Arquitectura Empresarial Maestra</option>
+          <option value="0">Modo Libre (Sandbox)</option>
+        </select>
+      </div>
+
+      <!-- Indicadores Rápidos -->
+      <div class="flex items-center gap-3 text-xs bg-slate-900/80 px-3 py-1.5 rounded-lg border border-slate-800">
+        <div class="flex items-center gap-1.5" title="Presupuesto Mensual Estimado">
+          <i class="fa-solid fa-coins text-amber-400"></i>
+          <span class="text-slate-400">Costo:</span>
+          <span id="headerCost" class="font-bold text-white">$0/mes</span>
+        </div>
+        <div class="h-3 w-px bg-slate-700"></div>
+        <div class="flex items-center gap-1.5" title="Disponibilidad Estimada">
+          <i class="fa-solid fa-shield-halved text-emerald-400"></i>
+          <span class="text-slate-400">SLA:</span>
+          <span id="headerSLA" class="font-bold text-emerald-400">0%</span>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <button onclick="toggleAudio()" id="audioBtn" class="p-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-slate-300 border border-slate-700 transition" title="Sonido On/Off">
+        <i class="fa-solid fa-volume-high"></i>
+      </button>
+
+      <button onclick="toggleCheatSheet()" class="px-3 py-1.5 bg-blue-600/20 hover:bg-blue-600/30 text-blue-400 border border-blue-500/30 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition">
+        <i class="fa-solid fa-book-open"></i> Guía AWS
+      </button>
+
+      <button onclick="resetCanvas()" class="px-3 py-1.5 bg-slate-800 hover:bg-rose-900/40 text-slate-300 hover:text-rose-300 border border-slate-700 hover:border-rose-700/50 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition">
+        <i class="fa-solid fa-rotate-left"></i> Reiniciar
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Workspace Layout -->
+  <div class="flex-1 flex flex-col md:flex-row overflow-hidden relative">
+
+    <!-- LEFT PALETTE: Component Library (3.1 - 3.4) -->
+    <aside class="w-full md:w-80 bg-slate-900 border-r border-slate-800 flex flex-col shadow-xl z-20">
+      <div class="p-3 border-b border-slate-800 bg-slate-950/50 flex justify-between items-center">
+        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+          <i class="fa-solid fa-cubes text-aws-orange"></i> Componentes AWS
+        </h2>
+        <span class="text-[10px] text-slate-400 bg-slate-800 px-2 py-0.5 rounded">Haz clic para añadir</span>
+      </div>
+
+      <div class="flex-1 overflow-y-auto p-3 space-y-4">
+
+        <!-- Category: DNS & Servicios de Red (3.3 & 3.1) -->
+        <div>
+          <div class="text-[11px] font-bold text-indigo-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+            <i class="fa-solid fa-globe"></i> 3.3 DNS y Dominio (Route 53)
+          </div>
+          <div class="grid grid-cols-1 gap-2">
+            <button onclick="addComponent('route53')" class="group p-2.5 bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 hover:border-indigo-500 rounded-lg flex items-center gap-3 transition text-left">
+              <div class="w-9 h-9 rounded-lg bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 flex items-center justify-center text-lg group-hover:scale-105 transition">
+                <i class="fa-solid fa-network-wired"></i>
+              </div>
+              <div class="flex-1">
+                <div class="text-xs font-bold text-slate-200">Route 53 DNS Zone</div>
+                <div class="text-[10px] text-slate-400">Registros A, NS, CNAME y Alias ALB</div>
+              </div>
+              <i class="fa-solid fa-plus text-slate-500 group-hover:text-indigo-400 text-xs"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Category: Balanceo de Carga (3.4) -->
+        <div>
+          <div class="text-[11px] font-bold text-emerald-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+            <i class="fa-solid fa-scale-balanced"></i> 3.4 Balanceo de Carga
+          </div>
+          <div class="grid grid-cols-1 gap-2">
+            <button onclick="addComponent('alb')" class="group p-2.5 bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 hover:border-emerald-500 rounded-lg flex items-center gap-3 transition text-left">
+              <div class="w-9 h-9 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center text-lg group-hover:scale-105 transition">
+                <i class="fa-solid fa-diagram-project"></i>
+              </div>
+              <div class="flex-1">
+                <div class="text-xs font-bold text-slate-200">Application Load Balancer (ALB)</div>
+                <div class="text-[10px] text-slate-400">Distribuye tráfico Capa 7 en Subredes Públicas</div>
+              </div>
+              <i class="fa-solid fa-plus text-slate-500 group-hover:text-emerald-400 text-xs"></i>
+            </button>
+
+            <button onclick="addComponent('targetGroup')" class="group p-2.5 bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 hover:border-emerald-500 rounded-lg flex items-center gap-3 transition text-left">
+              <div class="w-9 h-9 rounded-lg bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center text-lg group-hover:scale-105 transition">
+                <i class="fa-solid fa-bullseye"></i>
+              </div>
+              <div class="flex-1">
+                <div class="text-xs font-bold text-slate-200">Target Group + Health Check</div>
+                <div class="text-[10px] text-slate-400">Agrupa instancias EC2 y monitorea salud</div>
+              </div>
+              <i class="fa-solid fa-plus text-slate-500 group-hover:text-emerald-400 text-xs"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Category: Cómputo y Redes VPC (3.1) -->
+        <div>
+          <div class="text-[11px] font-bold text-amber-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+            <i class="fa-solid fa-server"></i> 3.1 Cómputo y VPC
+          </div>
+          <div class="grid grid-cols-1 gap-2">
+            <button onclick="addComponent('ec2_pub')" class="group p-2.5 bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 hover:border-amber-500 rounded-lg flex items-center gap-3 transition text-left">
+              <div class="w-9 h-9 rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center text-lg group-hover:scale-105 transition">
+                <i class="fa-solid fa-microchip"></i>
+              </div>
+              <div class="flex-1">
+                <div class="text-xs font-bold text-slate-200">EC2 Web-01 (AZ-a)</div>
+                <div class="text-[10px] text-slate-400">Servidor Web en Subred Privada AZ-a</div>
+              </div>
+              <i class="fa-solid fa-plus text-slate-500 group-hover:text-amber-400 text-xs"></i>
+            </button>
+
+            <button onclick="addComponent('ec2_priv')" class="group p-2.5 bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 hover:border-amber-500 rounded-lg flex items-center gap-3 transition text-left">
+              <div class="w-9 h-9 rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center text-lg group-hover:scale-105 transition">
+                <i class="fa-solid fa-microchip"></i>
+              </div>
+              <div class="flex-1">
+                <div class="text-xs font-bold text-slate-200">EC2 Web-02 (AZ-b)</div>
+                <div class="text-[10px] text-slate-400">Servidor Web en Subred Privada AZ-b</div>
+              </div>
+              <i class="fa-solid fa-plus text-slate-500 group-hover:text-amber-400 text-xs"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Category: Servicios de Almacenamiento (3.2) -->
+        <div>
+          <div class="text-[11px] font-bold text-sky-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+            <i class="fa-solid fa-database"></i> 3.2 Almacenamiento en AWS
+          </div>
+          <div class="grid grid-cols-1 gap-2">
+            <button onclick="addComponent('ebs')" class="group p-2.5 bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 hover:border-sky-500 rounded-lg flex items-center gap-3 transition text-left">
+              <div class="w-9 h-9 rounded-lg bg-sky-500/20 text-sky-400 border border-sky-500/30 flex items-center justify-center text-lg group-hover:scale-105 transition">
+                <i class="fa-solid fa-hard-drive"></i>
+              </div>
+              <div class="flex-1">
+                <div class="text-xs font-bold text-slate-200">Volumen EBS (/mnt/datos)</div>
+                <div class="text-[10px] text-slate-400">Bloques de alta velocidad montados en EC2</div>
+              </div>
+              <i class="fa-solid fa-plus text-slate-500 group-hover:text-sky-400 text-xs"></i>
+            </button>
+
+            <button onclick="addComponent('s3')" class="group p-2.5 bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 hover:border-sky-500 rounded-lg flex items-center gap-3 transition text-left">
+              <div class="w-9 h-9 rounded-lg bg-sky-500/20 text-sky-400 border border-sky-500/30 flex items-center justify-center text-lg group-hover:scale-105 transition">
+                <i class="fa-solid fa-bucket"></i>
+              </div>
+              <div class="flex-1">
+                <div class="text-xs font-bold text-slate-200">Bucket Amazon S3</div>
+                <div class="text-[10px] text-slate-400">Almacenamiento de objetos y respaldos con sync</div>
+              </div>
+              <i class="fa-solid fa-plus text-slate-500 group-hover:text-sky-400 text-xs"></i>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </aside>
+
+    <!-- CENTRAL CANVAS: Diagram Visualizer & Connection Area -->
+    <main class="flex-1 bg-slate-950 canvas-grid flex flex-col relative overflow-hidden">
+      
+      <!-- Current Level Objectives Bar -->
+      <div id="missionBanner" class="bg-slate-900/90 backdrop-blur border-b border-slate-800 p-3.5 flex flex-wrap items-center justify-between gap-3 shadow-md z-10">
+        <div class="flex items-start gap-3">
+          <div class="p-2 rounded-lg bg-aws-orange/20 text-aws-orange border border-aws-orange/30 text-lg">
+            <i class="fa-solid fa-bullseye"></i>
+          </div>
+          <div>
+            <div id="missionTitle" class="text-sm font-bold text-white">Cargando Misión...</div>
+            <div id="missionDesc" class="text-xs text-slate-300 max-w-3xl">Instrucciones del nivel.</div>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="simulateArchitecture()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg text-xs flex items-center gap-2 shadow-lg shadow-emerald-900/30 transition transform hover:scale-105">
+            <i class="fa-solid fa-play"></i> Desplegar y Simular
+          </button>
+          <button onclick="triggerChaosEvent()" class="px-3 py-2 bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 border border-amber-500/30 font-semibold rounded-lg text-xs flex items-center gap-1.5 transition">
+            <i class="fa-solid fa-bolt"></i> Prueba Caos (AZ Down)
+          </button>
+        </div>
+      </div>
+
+      <!-- Canvas Diagram Container -->
+      <div id="diagramContainer" class="flex-1 p-6 overflow-auto relative flex flex-col items-center justify-start min-h-[600px]">
+        
+        <!-- Interactive Diagram Flow Layers -->
+        <div class="w-full max-w-4xl space-y-6 relative">
+
+          <!-- Layer 1: Client & DNS (Route 53) -->
+          <div class="bg-slate-900/60 border border-indigo-500/30 rounded-xl p-4 shadow-lg backdrop-blur relative">
+            <div class="text-[11px] font-bold text-indigo-400 uppercase tracking-wider mb-3 flex items-center justify-between">
+              <span><i class="fa-solid fa-globe mr-1"></i> Capa Pública & Resolver DNS (Route 53)</span>
+              <span class="text-[10px] text-slate-400 font-mono">Internet / Users</span>
+            </div>
+            
+            <div id="layer-dns" class="min-h-[90px] border-2 border-dashed border-indigo-500/20 rounded-lg p-3 flex items-center justify-center gap-4 flex-wrap bg-slate-950/40">
+              <div class="text-xs text-slate-500 italic flex items-center gap-2">
+                <i class="fa-solid fa-arrow-down-long"></i> Agrega el componente Route 53 aquí
+              </div>
+            </div>
+          </div>
+
+          <!-- Connecting Line Indicator -->
+          <div class="flex justify-center -my-3 z-10">
+            <div class="w-0.5 h-6 bg-gradient-to-b from-indigo-500 to-emerald-500 opacity-60"></div>
+          </div>
+
+          <!-- Layer 2: Public Subnets / Load Balancing (ALB) -->
+          <div class="bg-slate-900/60 border border-emerald-500/30 rounded-xl p-4 shadow-lg backdrop-blur relative">
+            <div class="text-[11px] font-bold text-emerald-400 uppercase tracking-wider mb-3 flex items-center justify-between">
+              <span><i class="fa-solid fa-diagram-project mr-1"></i> Subredes Públicas (us-east-1a & us-east-1b) - Balanceador</span>
+              <span class="text-[10px] text-emerald-400/80 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">VPC Zona Publica</span>
+            </div>
+
+            <div id="layer-alb" class="min-h-[100px] border-2 border-dashed border-emerald-500/20 rounded-lg p-3 flex items-center justify-center gap-4 flex-wrap bg-slate-950/40">
+              <div class="text-xs text-slate-500 italic flex items-center gap-2">
+                <i class="fa-solid fa-arrow-down-long"></i> Agrega el Application Load Balancer y Target Groups aquí
+              </div>
+            </div>
+          </div>
+
+          <!-- Connecting Line Indicator -->
+          <div class="flex justify-center -my-3 z-10">
+            <div class="w-0.5 h-6 bg-gradient-to-b from-emerald-500 to-amber-500 opacity-60"></div>
+          </div>
+
+          <!-- Layer 3: Private Subnets / Compute Instances (EC2 Web-01 & Web-02) -->
+          <div class="bg-slate-900/60 border border-amber-500/30 rounded-xl p-4 shadow-lg backdrop-blur relative">
+            <div class="text-[11px] font-bold text-amber-400 uppercase tracking-wider mb-3 flex items-center justify-between">
+              <span><i class="fa-solid fa-server mr-1"></i> Subredes Privadas - Instancias de Cómputo</span>
+              <span class="text-[10px] text-amber-400/80 bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/20">VPC Zona privada</span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <!-- AZ-a -->
+              <div class="border border-slate-700/60 rounded-lg p-3 bg-slate-950/60">
+                <div class="text-[10px] text-slate-400 font-mono mb-2 flex items-center justify-between">
+                  <span>Subred Privada 1a (Zona A)</span>
+                  <span id="az-a-status" class="text-emerald-400 font-bold">Activa</span>
+                </div>
+                <div id="layer-ec2-a" class="min-h-[90px] border border-dashed border-slate-700 rounded p-2 flex flex-col items-center justify-center gap-2">
+                  <span class="text-xs text-slate-500 italic">Espacio Web-01</span>
+                </div>
+              </div>
+
+              <!-- AZ-b -->
+              <div class="border border-slate-700/60 rounded-lg p-3 bg-slate-950/60">
+                <div class="text-[10px] text-slate-400 font-mono mb-2 flex items-center justify-between">
+                  <span>Subred Privada 1b (Zona B)</span>
+                  <span id="az-b-status" class="text-emerald-400 font-bold">Activa</span>
+                </div>
+                <div id="layer-ec2-b" class="min-h-[90px] border border-dashed border-slate-700 rounded p-2 flex flex-col items-center justify-center gap-2">
+                  <span class="text-xs text-slate-500 italic">Espacio Web-02</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Connecting Line Indicator -->
+          <div class="flex justify-center -my-3 z-10">
+            <div class="w-0.5 h-6 bg-gradient-to-b from-amber-500 to-sky-500 opacity-60"></div>
+          </div>
+
+          <!-- Layer 4: Storage Services (EBS, S3) -->
+          <div class="bg-slate-900/60 border border-sky-500/30 rounded-xl p-4 shadow-lg backdrop-blur relative">
+            <div class="text-[11px] font-bold text-sky-400 uppercase tracking-wider mb-3 flex items-center justify-between">
+              <span><i class="fa-solid fa-database mr-1"></i> Capa de Almacenamiento & Respaldos</span>
+              <span class="text-[10px] text-sky-400/80 bg-sky-500/10 px-2 py-0.5 rounded border border-sky-500/20">EBS / S3 Storage</span>
+            </div>
+
+            <div id="layer-storage" class="min-h-[100px] border-2 border-dashed border-sky-500/20 rounded-lg p-3 flex items-center justify-center gap-4 flex-wrap bg-slate-950/40">
+              <div class="text-xs text-slate-500 italic flex items-center gap-2">
+                <i class="fa-solid fa-arrow-down-long"></i> Agrega volúmenes EBS o Buckets S3 aquí
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- Live Simulation Terminal / Log Panel -->
+      <div class="h-32 bg-slate-900 border-t border-slate-800 p-3 font-mono text-xs overflow-y-auto flex flex-col">
+        <div class="flex items-center justify-between text-slate-400 border-b border-slate-800 pb-1 mb-2">
+          <span class="text-[10px] uppercase font-bold tracking-wider text-emerald-400 flex items-center gap-1.5">
+            <i class="fa-solid fa-terminal"></i> Consola de Diagnóstico & Logs de Red AWS
+          </span>
+          <span id="logCount" class="text-[10px] bg-slate-800 px-1.5 py-0.5 rounded">0 eventos</span>
+        </div>
+        <div id="consoleLogs" class="flex-1 space-y-1 text-slate-300">
+          <div class="text-slate-500">[SISTEMA] Selecciona un nivel o agrega componentes para comenzar a diseñar la arquitectura.</div>
+        </div>
+      </div>
+    </main>
+
+    <!-- RIGHT SIDEBAR: Mission Requirements & Diagnostic Audit -->
+    <aside class="w-full md:w-80 bg-slate-900 border-l border-slate-800 flex flex-col shadow-xl z-20">
+      <div class="p-3 border-b border-slate-800 bg-slate-950/50 flex justify-between items-center">
+        <h2 class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-2">
+          <i class="fa-solid fa-list-check text-emerald-400"></i> Checklist de la Misión
+        </h2>
+        <span id="completionPercent" class="text-xs font-bold text-amber-400">0%</span>
+      </div>
+
+      <div class="flex-1 overflow-y-auto p-4 space-y-4">
+
+        <!-- Requirements List -->
+        <div class="space-y-2.5" id="requirementsList">
+          <!-- Populated by JavaScript -->
+        </div>
+
+        <hr class="border-slate-800">
+
+        <!-- Architecture Score Cards -->
+        <div class="space-y-3">
+          <div class="text-xs font-bold text-slate-400 uppercase tracking-wider">Métricas de Evaluación</div>
+
+          <!-- Availability -->
+          <div class="bg-slate-950 p-3 rounded-lg border border-slate-800">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-400">Alta Disponibilidad (SLA)</span>
+              <span id="slaValue" class="font-bold text-emerald-400">0%</span>
+            </div>
+            <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+              <div id="slaBar" class="bg-emerald-500 h-2 rounded-full transition-all duration-500" style="width: 0%"></div>
+            </div>
+          </div>
+
+          <!-- Resiliency -->
+          <div class="bg-slate-950 p-3 rounded-lg border border-slate-800">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-400">Seguridad & Aislamiento</span>
+              <span id="securityValue" class="font-bold text-indigo-400">Bajo</span>
+            </div>
+            <div class="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
+              <div id="securityBar" class="bg-indigo-500 h-2 rounded-full transition-all duration-500" style="width: 20%"></div>
+            </div>
+          </div>
+
+          <!-- Cost Efficiency -->
+          <div class="bg-slate-950 p-3 rounded-lg border border-slate-800">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-400">Eficiencia de Almacenamiento</span>
+              <span id="storageValue" class="font-bold text-sky-400">Sin respaldos</span>
+            </div>
+            <div class="text-[11px] text-slate-500 mt-1" id="storageSubtext">No se ha detectado bucket S3 para backups.</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Quick Action Footer inside Right Panel -->
+      <div class="p-3 border-t border-slate-800 bg-slate-950/80">
+        <button onclick="checkWinCondition()" class="w-full py-2.5 bg-aws-orange hover:bg-aws-orangeHover text-slate-950 font-bold rounded-lg text-xs shadow-md shadow-orange-500/20 transition flex items-center justify-center gap-2">
+          <i class="fa-solid fa-award"></i> Validar Arquitectura
+        </button>
+      </div>
+    </aside>
+
+  </div>
+
+  <!-- MODAL: Configuration Window for AWS Components -->
+  <div id="configModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-xl w-full max-w-md p-5 shadow-2xl space-y-4">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+        <h3 id="modalTitle" class="text-sm font-bold text-white flex items-center gap-2">
+          <i class="fa-solid fa-sliders text-aws-orange"></i> Configuración de Componente
+        </h3>
+        <button onclick="closeModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div id="modalBody" class="space-y-3 text-xs text-slate-300">
+        <!-- Dynamic Settings Content populated by JS -->
+      </div>
+
+      <div class="flex justify-end gap-2 pt-2 border-t border-slate-800">
+        <button onclick="closeModal()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-xs">Cancelar</button>
+        <button onclick="saveComponentConfig()" class="px-4 py-1.5 bg-aws-orange hover:bg-aws-orangeHover text-slate-950 font-bold rounded text-xs">Guardar Cambios</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: AWS Cheat Sheet & Study Guide -->
+  <div id="cheatSheetModal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-xl w-full max-w-2xl max-h-[85vh] flex flex-col p-5 shadow-2xl space-y-4">
+      <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+        <h3 class="text-base font-bold text-amber-400 flex items-center gap-2">
+          <i class="fa-solid fa-book-open"></i> Guía de Referencia Rápida AWS (Unidad 3)
+        </h3>
+        <button onclick="toggleCheatSheet()" class="text-slate-400 hover:text-white text-lg"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+
+      <div class="flex-1 overflow-y-auto space-y-4 text-xs text-slate-300 pr-2">
+        <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1.5">
+          <div class="font-bold text-indigo-400 text-sm">3.3 Route 53 (DNS y Dominio)</div>
+          <p>Permite registrar dominios y dirigir el tráfico. **Registros A de tipo Alias:** Apuntan directamente a recursos de AWS como Application Load Balancers (ALB) de forma dinámica sin usar direcciones IP fijas.</p>
+        </div>
+
+        <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1.5">
+          <div class="font-bold text-emerald-400 text-sm">3.4 Balanceo de Carga (ALB)</div>
+          <p>Distribuye el tráfico entre múltiples instancias EC2 en distintas Zonas de Disponibilidad (us-east-1a, us-east-1b). **Target Groups:** Agrupan las instancias y ejecutan **Health Checks** para evitar enviar tráfico a servidores caídos.</p>
+        </div>
+
+        <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1.5">
+          <div class="font-bold text-amber-400 text-sm">3.1 Redes VPC y Subredes</div>
+          <p>Para mayor seguridad, los servidores web EC2 se ubican en **Subredes Privadas** (sin IP pública directa). El ALB se ubica en **Subredes Públicas** recibiendo peticiones de la red y redirigiéndolas hacia las EC2 privadas.</p>
+        </div>
+
+        <div class="bg-slate-950 p-3 rounded-lg border border-slate-800 space-y-1.5">
+          <div class="font-bold text-sky-400 text-sm">3.2 Almacenamiento (EBS y S3)</div>
+          <p>**Amazon EBS:** Disco de bloques conectado localmente a una EC2 (`/mnt/datos-ebs`) para rápido acceso en lecturas. **Amazon S3:** Bucket de objetos para respaldos globales y sincronización estática mediante IAM Roles.</p>
+        </div>
+      </div>
+
+      <div class="flex justify-end pt-2 border-t border-slate-800">
+        <button onclick="toggleCheatSheet()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold rounded text-xs">Entendido</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- GAME LOGIC & INTERACTION JAVASCRIPT -->
+  <script>
+    // Audio Context Synthesizer
+    let audioEnabled = true;
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function playSound(type) {
+      if (!audioEnabled) return;
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        const now = audioCtx.currentTime;
+        if (type === 'click') {
+          osc.frequency.setValueAtTime(400, now);
+          osc.frequency.exponentialRampToValueAtTime(200, now + 0.08);
+          gain.gain.setValueAtTime(0.1, now);
+          gain.gain.linearRampToValueAtTime(0.01, now + 0.08);
+          osc.start(now);
+          osc.stop(now + 0.08);
+        } else if (type === 'success') {
+          osc.frequency.setValueAtTime(523.25, now);
+          osc.frequency.setValueAtTime(659.25, now + 0.1);
+          osc.frequency.setValueAtTime(783.99, now + 0.2);
+          gain.gain.setValueAtTime(0.15, now);
+          gain.gain.linearRampToValueAtTime(0.01, now + 0.35);
+          osc.start(now);
+          osc.stop(now + 0.35);
+        } else if (type === 'error') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(180, now);
+          osc.frequency.linearRampToValueAtTime(110, now + 0.2);
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.linearRampToValueAtTime(0.01, now + 0.2);
+          osc.start(now);
+          osc.stop(now + 0.2);
+        }
+      } catch (e) {}
+    }
+
+    function toggleAudio() {
+      audioEnabled = !audioEnabled;
+      const btn = document.getElementById('audioBtn');
+      btn.innerHTML = audioEnabled ? '<i class="fa-solid fa-volume-high"></i>' : '<i class="fa-solid fa-volume-xmark text-rose-400"></i>';
+    }
+
+    function toggleCheatSheet() {
+      const modal = document.getElementById('cheatSheetModal');
+      modal.classList.toggle('hidden');
+    }
+
+    // STATE MANAGEMENT
+    let currentLevel = 1;
+    let placedComponents = {
+      route53: null,
+      alb: null,
+      targetGroup: null,
+      ec2_pub: null,
+      ec2_priv: null,
+      ebs: null,
+      s3: null
+    };
+
+    let componentConfigs = {
+      route53: { recordType: 'Alias A', target: 'ALB' },
+      alb: { subnets: ['us-east-1a', 'us-east-1b'], scheme: 'Internet-facing' },
+      targetGroup: { protocol: 'HTTP', port: 80, healthCheck: true, path: '/' },
+      ebs: { size: '20GB', mountPoint: '/mnt/datos-ebs' },
+      s3: { syncEnabled: true, iamRoleAttached: true }
+    };
+
+    let activeConfigComponent = null;
+
+    // LEVEL DEFINITIONS
+    const levelsData = {
+      1: {
+        title: "Nivel 1: Publicación de Sitio Web y DNS (Route 53)",
+        desc: "Crea una zona alojada en Route 53 con un registro Alias tipo A que apunte al ALB para servir tráfico al servidor web EC2.",
+        reqs: [
+          { id: 'has_route53', text: 'Zona Alojada en Route 53 agregada', check: () => !!placedComponents.route53 },
+          { id: 'has_alb', text: 'Application Load Balancer en subredes públicas', check: () => !!placedComponents.alb },
+          { id: 'has_ec2_a', text: 'Servidor EC2 Web-01 desplegado', check: () => !!placedComponents.ec2_pub },
+          { id: 'alias_config', text: 'Route 53 apuntando con Registro Alias al ALB', check: () => componentConfigs.route53.recordType === 'Alias A' }
+        ]
+      },
+      2: {
+        title: "Nivel 2: Alta Disponibilidad Multi-AZ con ALB",
+        desc: "Diseña un esquema con balanceador ALB repartiendo peticiones entre dos instancias EC2 en diferentes Zonas de Disponibilidad (AZ-a y AZ-b) con Target Group.",
+        reqs: [
+          { id: 'has_route53', text: 'Route 53 enrutando al ALB', check: () => !!placedComponents.route53 },
+          { id: 'has_alb', text: 'ALB público en us-east-1a y us-east-1b', check: () => !!placedComponents.alb },
+          { id: 'has_tg', text: 'Target Group con Health Checks activos', check: () => !!placedComponents.targetGroup && componentConfigs.targetGroup.healthCheck },
+          { id: 'has_ec2_a', text: 'EC2 Web-01 en Subred Privada 1a', check: () => !!placedComponents.ec2_pub },
+          { id: 'has_ec2_b', text: 'EC2 Web-02 en Subred Privada 1b', check: () => !!placedComponents.ec2_priv }
+        ]
+      },
+      3: {
+        title: "Nivel 3: Almacenamiento Local (EBS) y Respaldos S3",
+        desc: "Configura almacenamiento en bloque EBS montado en `/mnt/datos-ebs` y respalda/sincroniza en Amazon S3 usando un Rol IAM.",
+        reqs: [
+          { id: 'has_ebs', text: 'Volumen EBS montado en /mnt/datos-ebs', check: () => !!placedComponents.ebs },
+          { id: 'has_s3', text: 'Bucket Amazon S3 para sincronización', check: () => !!placedComponents.s3 },
+          { id: 's3_iam', text: 'Rol IAM configurado para sincronización EC2<->S3', check: () => componentConfigs.s3.iamRoleAttached },
+          { id: 'has_ec2_a', text: 'Al menos un servidor EC2 activo', check: () => !!placedComponents.ec2_pub || !!placedComponents.ec2_priv }
+        ]
+      },
+      4: {
+        title: "Nivel 4: Arquitectura Empresarial Maestra",
+        desc: "Construye la arquitectura completa de la Unidad 3: Route 53 + ALB + Target Group + EC2 Multi-AZ + EBS + S3 Sync.",
+        reqs: [
+          { id: 'has_route53', text: 'Route 53 Alias Record', check: () => !!placedComponents.route53 },
+          { id: 'has_alb', text: 'ALB con Target Group', check: () => !!placedComponents.alb && !!placedComponents.targetGroup },
+          { id: 'has_multi_ec2', text: 'Servidores EC2 redundantes (Web-01 y Web-02)', check: () => !!placedComponents.ec2_pub && !!placedComponents.ec2_priv },
+          { id: 'has_storage_all', text: 'Volumen EBS + Amazon S3 Sync', check: () => !!placedComponents.ebs && !!placedComponents.s3 }
+        ]
+      },
+      0: {
+        title: "Modo Libre (Sandbox)",
+        desc: "Experimenta libremente agregando y configurando componentes AWS de la Unidad 3.",
+        reqs: [
+          { id: 'free_1', text: 'Agrega cualquier componente para ver su comportamiento', check: () => Object.values(placedComponents).some(x => !!x) }
+        ]
+      }
+    };
+
+    // COMPONENT PLACEMENT LOGIC
+    function addComponent(type) {
+      playSound('click');
+      if (placedComponents[type]) {
+        addLog(`[ADVERTENCIA] El componente ${type.toUpperCase()} ya está presente en el diagrama.`);
+        return;
+      }
+
+      placedComponents[type] = true;
+      renderComponentUI(type);
+      addLog(`[OK] Componente agregado: ${getComponentLabel(type)}`);
+      updateEvaluation();
+    }
+
+    function removeComponent(type) {
+      playSound('click');
+      placedComponents[type] = false;
+      const el = document.getElementById(`comp-${type}`);
+      if (el) el.remove();
+      addLog(`[INFO] Componente removido: ${getComponentLabel(type)}`);
+      updateEvaluation();
+    }
+
+    function getComponentLabel(type) {
+      const labels = {
+        route53: 'Route 53 Hosted Zone',
+        alb: 'Application Load Balancer',
+        targetGroup: 'Target Group + Health Checks',
+        ec2_pub: 'EC2 Web-01 (AZ-1a)',
+        ec2_priv: 'EC2 Web-02 (AZ-1b)',
+        ebs: 'EBS Volume (/mnt/datos)',
+        s3: 'Bucket Amazon S3'
+      };
+      return labels[type] || type;
+    }
+
+    function renderComponentUI(type) {
+      let targetLayerId = '';
+      let html = '';
+
+      if (type === 'route53') {
+        targetLayerId = 'layer-dns';
+        html = `
+          <div id="comp-route53" class="bg-indigo-900/60 border border-indigo-400 p-2.5 rounded-lg flex items-center gap-3 shadow-md pulsing-node">
+            <div class="text-indigo-300 text-xl"><i class="fa-solid fa-network-wired"></i></div>
+            <div>
+              <div class="text-xs font-bold text-white">Route 53 (miempresa.com)</div>
+              <div class="text-[10px] text-indigo-200">Registro A: <span class="font-mono">${componentConfigs.route53.recordType}</span></div>
+            </div>
+            <div class="flex items-center gap-1 ml-2">
+              <button onclick="openConfigModal('route53')" class="p-1 text-slate-300 hover:text-white text-xs"><i class="fa-solid fa-gear"></i></button>
+              <button onclick="removeComponent('route53')" class="p-1 text-rose-400 hover:text-rose-300 text-xs"><i class="fa-solid fa-trash"></i></button>
+            </div>
+          </div>
+        `;
+      } else if (type === 'alb' || type === 'targetGroup') {
+        targetLayerId = 'layer-alb';
+        if (type === 'alb') {
+          html = `
+            <div id="comp-alb" class="bg-emerald-900/60 border border-emerald-400 p-2.5 rounded-lg flex items-center gap-3 shadow-md pulsing-node">
+              <div class="text-emerald-300 text-xl"><i class="fa-solid fa-diagram-project"></i></div>
+              <div>
+                <div class="text-xs font-bold text-white">Application Load Balancer</div>
+                <div class="text-[10px] text-emerald-200">Público (us-east-1a & 1b)</div>
+              </div>
+              <div class="flex items-center gap-1 ml-2">
+                <button onclick="openConfigModal('alb')" class="p-1 text-slate-300 hover:text-white text-xs"><i class="fa-solid fa-gear"></i></button>
+                <button onclick="removeComponent('alb')" class="p-1 text-rose-400 hover:text-rose-300 text-xs"><i class="fa-solid fa-trash"></i></button>
+              </div>
+            </div>
+          `;
+        } else {
+          html = `
+            <div id="comp-targetGroup" class="bg-emerald-950 border border-emerald-500/50 p-2.5 rounded-lg flex items-center gap-3 shadow-md">
+              <div class="text-emerald-400 text-xl"><i class="fa-solid fa-bullseye"></i></div>
+              <div>
+                <div class="text-xs font-bold text-white">Target Group</div>
+                <div class="text-[10px] text-slate-300">Health Check: <span class="text-emerald-400 font-bold">HTTP /200 OK</span></div>
+              </div>
+              <div class="flex items-center gap-1 ml-2">
+                <button onclick="openConfigModal('targetGroup')" class="p-1 text-slate-300 hover:text-white text-xs"><i class="fa-solid fa-gear"></i></button>
+                <button onclick="removeComponent('targetGroup')" class="p-1 text-rose-400 hover:text-rose-300 text-xs"><i class="fa-solid fa-trash"></i></button>
+              </div>
+            </div>
+          `;
+        }
+      } else if (type === 'ec2_pub') {
+        targetLayerId = 'layer-ec2-a';
+        html = `
+          <div id="comp-ec2_pub" class="w-full bg-amber-900/50 border border-amber-400 p-2 rounded flex items-center justify-between text-xs">
+            <div class="flex items-center gap-2">
+              <i class="fa-solid fa-microchip text-amber-400"></i>
+              <span class="font-bold text-white">EC2 Web-01</span>
+            </div>
+            <button onclick="removeComponent('ec2_pub')" class="text-rose-400 text-xs"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+        `;
+      } else if (type === 'ec2_priv') {
+        targetLayerId = 'layer-ec2-b';
+        html = `
+          <div id="comp-ec2_priv" class="w-full bg-amber-900/50 border border-amber-400 p-2 rounded flex items-center justify-between text-xs">
+            <div class="flex items-center gap-2">
+              <i class="fa-solid fa-microchip text-amber-400"></i>
+              <span class="font-bold text-white">EC2 Web-02</span>
+            </div>
+            <button onclick="removeComponent('ec2_priv')" class="text-rose-400 text-xs"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+        `;
+      } else if (type === 'ebs' || type === 's3') {
+        targetLayerId = 'layer-storage';
+        if (type === 'ebs') {
+          html = `
+            <div id="comp-ebs" class="bg-sky-900/60 border border-sky-400 p-2.5 rounded-lg flex items-center gap-3 shadow-md">
+              <div class="text-sky-300 text-xl"><i class="fa-solid fa-hard-drive"></i></div>
+              <div>
+                <div class="text-xs font-bold text-white">EBS Volume (20GB)</div>
+                <div class="text-[10px] text-sky-200">Montado en /mnt/datos-ebs</div>
+              </div>
+              <div class="flex items-center gap-1 ml-2">
+                <button onclick="openConfigModal('ebs')" class="p-1 text-slate-300 hover:text-white text-xs"><i class="fa-solid fa-gear"></i></button>
+                <button onclick="removeComponent('ebs')" class="p-1 text-rose-400 hover:text-rose-300 text-xs"><i class="fa-solid fa-trash"></i></button>
+              </div>
+            </div>
+          `;
+        } else {
+          html = `
+            <div id="comp-s3" class="bg-sky-900/60 border border-sky-400 p-2.5 rounded-lg flex items-center gap-3 shadow-md">
+              <div class="text-sky-300 text-xl"><i class="fa-solid fa-bucket"></i></div>
+              <div>
+                <div class="text-xs font-bold text-white">Bucket Amazon S3</div>
+                <div class="text-[10px] text-sky-200">Sincronización via IAM Role</div>
+              </div>
+              <div class="flex items-center gap-1 ml-2">
+                <button onclick="openConfigModal('s3')" class="p-1 text-slate-300 hover:text-white text-xs"><i class="fa-solid fa-gear"></i></button>
+                <button onclick="removeComponent('s3')" class="p-1 text-rose-400 hover:text-rose-300 text-xs"><i class="fa-solid fa-trash"></i></button>
+              </div>
+            </div>
+          `;
+        }
+      }
+
+      const layerEl = document.getElementById(targetLayerId);
+      if (layerEl) {
+        // Clear placeholder text if first element
+        if (layerEl.querySelector('.italic')) {
+          layerEl.innerHTML = '';
+        }
+        layerEl.insertAdjacentHTML('beforeend', html);
+      }
+    }
+
+    // MODAL CONFIGURATIONS
+    function openConfigModal(type) {
+      playSound('click');
+      activeConfigComponent = type;
+      const modal = document.getElementById('configModal');
+      const modalTitle = document.getElementById('modalTitle');
+      const modalBody = document.getElementById('modalBody');
+
+      modal.classList.remove('hidden');
+
+      if (type === 'route53') {
+        modalTitle.innerHTML = '<i class="fa-solid fa-network-wired text-indigo-400"></i> Configurar Route 53 DNS';
+        modalBody.innerHTML = `
+          <div>
+            <label class="block text-[11px] text-slate-400 mb-1">Tipo de Registro DNS</label>
+            <select id="cfg-r53-type" class="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white">
+              <option value="Alias A" ${componentConfigs.route53.recordType === 'Alias A' ? 'selected' : ''}>Alias (Direcciona dinámicamente al ALB)</option>
+              <option value="CNAME" ${componentConfigs.route53.recordType === 'CNAME' ? 'selected' : ''}>CNAME (Nombre canónico)</option>
+              <option value="A Standard" ${componentConfigs.route53.recordType === 'A Standard' ? 'selected' : ''}>A Estándar (IP Estática Fija)</option>
+            </select>
+          </div>
+          <p class="text-[10px] text-slate-400 bg-slate-950 p-2 rounded border border-slate-800">
+            <strong>Nota técnica:</strong> En AWS, se recomienda utilizar el registro tipo <strong>Alias</strong> para apuntar a un Application Load Balancer ya que la IP del ALB puede cambiar dinámicamente.
+          </p>
+        `;
+      } else if (type === 'alb') {
+        modalTitle.innerHTML = '<i class="fa-solid fa-diagram-project text-emerald-400"></i> Configurar ALB';
+        modalBody.innerHTML = `
+          <div>
+            <label class="block text-[11px] text-slate-400 mb-1">Esquema del Balanceador</label>
+            <select class="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white">
+              <option>Internet-facing (Público hacia la Web)</option>
+              <option>Internal (Solo dentro de la VPC)</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[11px] text-slate-400 mb-1">Subredes Desplegadas</label>
+            <div class="space-y-1 bg-slate-950 p-2 rounded border border-slate-800">
+              <label class="flex items-center gap-2"><input type="checkbox" checked disabled class="accent-emerald-500"> Subred Pública 1a (us-east-1a)</label>
+              <label class="flex items-center gap-2"><input type="checkbox" checked disabled class="accent-emerald-500"> Subred Pública 1b (us-east-1b)</label>
+            </div>
+          </div>
+        `;
+      } else if (type === 'targetGroup') {
+        modalTitle.innerHTML = '<i class="fa-solid fa-bullseye text-emerald-400"></i> Configurar Target Group';
+        modalBody.innerHTML = `
+          <div>
+            <label class="flex items-center gap-2 cursor-pointer bg-slate-950 p-2 rounded border border-slate-800">
+              <input type="checkbox" id="cfg-tg-hc" ${componentConfigs.targetGroup.healthCheck ? 'checked' : ''} class="accent-emerald-500 w-4 h-4">
+              <span class="font-bold text-white">Habilitar Health Checks (Monitoreo de Salud)</span>
+            </label>
+          </div>
+          <div>
+            <label class="block text-[11px] text-slate-400 mb-1">Ruta de Health Check</label>
+            <input type="text" value="/" class="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white" disabled>
+          </div>
+        `;
+      } else if (type === 's3') {
+        modalTitle.innerHTML = '<i class="fa-solid fa-bucket text-sky-400"></i> Configurar Bucket S3';
+        modalBody.innerHTML = `
+          <div>
+            <label class="flex items-center gap-2 cursor-pointer bg-slate-950 p-2 rounded border border-slate-800">
+              <input type="checkbox" id="cfg-s3-iam" ${componentConfigs.s3.iamRoleAttached ? 'checked' : ''} class="accent-sky-500 w-4 h-4">
+              <span class="font-bold text-white">Asignar IAM Role (Permisos para EC2 sync)</span>
+            </label>
+          </div>
+        `;
+      } else if (type === 'ebs') {
+        modalTitle.innerHTML = '<i class="fa-solid fa-hard-drive text-sky-400"></i> Configurar Volumen EBS';
+        modalBody.innerHTML = `
+          <div>
+            <label class="block text-[11px] text-slate-400 mb-1">Punto de Montaje en el Sistema de Archivos</label>
+            <input type="text" value="/mnt/datos-ebs" class="w-full bg-slate-800 border border-slate-700 rounded p-2 text-white" disabled>
+          </div>
+        `;
+      }
+    }
+
+    function closeModal() {
+      document.getElementById('configModal').classList.add('hidden');
+    }
+
+    function saveComponentConfig() {
+      playSound('click');
+      if (activeConfigComponent === 'route53') {
+        const typeSelect = document.getElementById('cfg-r53-type');
+        componentConfigs.route53.recordType = typeSelect.value;
+        addLog(`[CONFIG] Route 53 actualizado a registro: ${typeSelect.value}`);
+        renderComponentUI('route53');
+      } else if (activeConfigComponent === 'targetGroup') {
+        const hc = document.getElementById('cfg-tg-hc').checked;
+        componentConfigs.targetGroup.healthCheck = hc;
+        addLog(`[CONFIG] Target Group Health Checks: ${hc ? 'ACTIVADO' : 'DESACTIVADO'}`);
+      } else if (activeConfigComponent === 's3') {
+        const iam = document.getElementById('cfg-s3-iam').checked;
+        componentConfigs.s3.iamRoleAttached = iam;
+        addLog(`[CONFIG] Permiso IAM Role en S3: ${iam ? 'ASIGNADO' : 'DENEGADO'}`);
+      }
+      closeModal();
+      updateEvaluation();
+    }
+
+    // EVALUATION ENGINE
+    function updateEvaluation() {
+      const currentLevelObj = levelsData[currentLevel];
+      const reqListEl = document.getElementById('requirementsList');
+      reqListEl.innerHTML = '';
+
+      let passedCount = 0;
+      currentLevelObj.reqs.forEach(req => {
+        const isPassed = req.check();
+        if (isPassed) passedCount++;
+
+        const itemHtml = `
+          <div class="flex items-start gap-2.5 text-xs p-2 rounded ${isPassed ? 'bg-emerald-950/40 border border-emerald-800/40' : 'bg-slate-950 border border-slate-800'}">
+            <i class="fa-solid ${isPassed ? 'fa-circle-check text-emerald-400' : 'fa-circle-xmark text-slate-600'} mt-0.5 text-sm"></i>
+            <span class="${isPassed ? 'text-emerald-200' : 'text-slate-400'}">${req.text}</span>
+          </div>
+        `;
+        reqListEl.insertAdjacentHTML('beforeend', itemHtml);
+      });
+
+      const percent = Math.round((passedCount / currentLevelObj.reqs.length) * 100);
+      document.getElementById('completionPercent').innerText = `${percent}%`;
+
+      // Update Metrics
+      calculateMetrics();
+    }
+
+    function calculateMetrics() {
+      let cost = 0;
+      let sla = 0;
+      let security = 'Baja';
+      let storageStatus = 'Sin respaldo';
+
+      if (placedComponents.route53) cost += 0.50; // Hosted Zone
+      if (placedComponents.alb) { cost += 22; sla += 40; }
+      if (placedComponents.ec2_pub) { cost += 15; sla += 25; }
+      if (placedComponents.ec2_priv) { cost += 15; sla += 25; }
+      if (placedComponents.ebs) { cost += 2; }
+      if (placedComponents.s3) { cost += 3; storageStatus = 'S3 Sync Activo'; }
+
+      if (placedComponents.ec2_pub && placedComponents.ec2_priv && placedComponents.alb) {
+        sla = 99.99; // Multi-AZ HA
+        security = 'Alta (Subredes Ailadas)';
+      } else if (placedComponents.ec2_pub || placedComponents.ec2_priv) {
+        sla = Math.min(sla, 99.0);
+        security = 'Media';
+      }
+
+      document.getElementById('headerCost').innerText = `$${cost.toFixed(2)}/mes`;
+      document.getElementById('headerSLA').innerText = `${sla}%`;
+      document.getElementById('slaValue').innerText = `${sla}%`;
+      document.getElementById('slaBar').style.width = `${Math.min(sla, 100)}%`;
+
+      document.getElementById('securityValue').innerText = security;
+      document.getElementById('storageValue').innerText = storageStatus;
+      document.getElementById('storageSubtext').innerText = placedComponents.s3 ? 'Sincronización mediante IAM Role configurada.' : 'Se recomienda agregar Amazon S3 para copias de seguridad.';
+    }
+
+    function changeLevel(lvl) {
+      playSound('click');
+      currentLevel = parseInt(lvl);
+      const levelData = levelsData[currentLevel];
+
+      document.getElementById('missionTitle').innerText = levelData.title;
+      document.getElementById('missionDesc').innerText = levelData.desc;
+
+      addLog(`[CAMBIO DE NIVEL] Iniciando: ${levelData.title}`);
+      updateEvaluation();
+    }
+
+    function resetCanvas() {
+      playSound('click');
+      placedComponents = {
+        route53: null,
+        alb: null,
+        targetGroup: null,
+        ec2_pub: null,
+        ec2_priv: null,
+        ebs: null,
+        s3: null
+      };
+
+      document.getElementById('layer-dns').innerHTML = '<div class="text-xs text-slate-500 italic flex items-center gap-2"><i class="fa-solid fa-arrow-down-long"></i> Agrega el componente Route 53 aquí</div>';
+      document.getElementById('layer-alb').innerHTML = '<div class="text-xs text-slate-500 italic flex items-center gap-2"><i class="fa-solid fa-arrow-down-long"></i> Agrega el Application Load Balancer y Target Groups aquí</div>';
+      document.getElementById('layer-ec2-a').innerHTML = '<span class="text-xs text-slate-500 italic">Espacio Web-01</span>';
+      document.getElementById('layer-ec2-b').innerHTML = '<span class="text-xs text-slate-500 italic">Espacio Web-02</span>';
+      document.getElementById('layer-storage').innerHTML = '<div class="text-xs text-slate-500 italic flex items-center gap-2"><i class="fa-solid fa-arrow-down-long"></i> Agrega volúmenes EBS o Buckets S3 aquí</div>';
+
+      addLog(`[SISTEMA] Arquitectura reiniciada.`);
+      updateEvaluation();
+    }
+
+    function addLog(msg) {
+      const logsContainer = document.getElementById('consoleLogs');
+      const time = new Date().toLocaleTimeString();
+      const div = document.createElement('div');
+      div.className = 'text-[11px] font-mono leading-relaxed flex items-start gap-2';
+      div.innerHTML = `<span class="text-slate-500">[${time}]</span> <span>${msg}</span>`;
+      logsContainer.appendChild(div);
+      logsContainer.scrollTop = logsContainer.scrollHeight;
+
+      const logCount = document.getElementById('logCount');
+      logCount.innerText = `${logsContainer.children.length} eventos`;
+    }
+
+    // TRAFFIC SIMULATOR
+    function simulateArchitecture() {
+      if (!placedComponents.route53 && !placedComponents.alb) {
+        playSound('error');
+        addLog(`[ERROR DE SIMULACIÓN] No hay punto de entrada público (Route 53 / ALB) para recibir peticiones web.`);
+        return;
+      }
+
+      playSound('success');
+      addLog(`[SIMULACIÓN] Generando tráfico web entrante HTTP/HTTPS a la arquitectura...`);
+
+      // Spawn Particles
+      createTrafficParticles();
+
+      setTimeout(() => {
+        if (placedComponents.alb && (!placedComponents.ec2_pub && !placedComponents.ec2_priv)) {
+          playSound('error');
+          addLog(`[FALLO ALB] Error HTTP 503 Service Unavailable: El Application Load Balancer no tiene instancias EC2 asociadas.`);
+        } else if (placedComponents.alb && placedComponents.targetGroup && (placedComponents.ec2_pub || placedComponents.ec2_priv)) {
+          addLog(`[ÉXITO HTTP 200] Peticiones distribuidas correctamente entre las instancias activas por el ALB.`);
+        } else if (!placedComponents.targetGroup && placedComponents.alb) {
+          addLog(`[ADVERTENCIA] El ALB requiere un Target Group para monitorear la salud de las instancias.`);
+        }
+      }, 1200);
+    }
+
+    function createTrafficParticles() {
+      const container = document.getElementById('diagramContainer');
+      for (let i = 0; i < 6; i++) {
+        setTimeout(() => {
+          const particle = document.createElement('div');
+          particle.className = 'traffic-particle bg-emerald-400 text-emerald-300';
+          particle.style.left = '50%';
+          particle.style.top = '120px';
+          container.appendChild(particle);
+
+          // Animate Particle Down
+          let topPos = 120;
+          const interval = setInterval(() => {
+            topPos += 12;
+            particle.style.top = `${topPos}px`;
+            if (topPos > 450) {
+              clearInterval(interval);
+              particle.remove();
+            }
+          }, 30);
+        }, i * 200);
+      }
+    }
+
+    function triggerChaosEvent() {
+      playSound('click');
+      addLog(`[PRUEBA DE CAOS] Simulando caída total de la Zona de Disponibilidad us-east-1a...`);
+      
+      const azA = document.getElementById('az-a-status');
+      if (azA) azA.innerText = 'CAÍDA / DOWN';
+      if (azA) azA.className = 'text-rose-500 font-bold';
+
+      setTimeout(() => {
+        if (placedComponents.ec2_priv) {
+          playSound('success');
+          addLog(`[RESILIENCIA ALTA] El ALB detectó la falla en AZ-a y derivó automáticamente el 100% del tráfico a EC2 Web-02 en AZ-b. Tu sitio sigue ONLINE!`);
+        } else {
+          playSound('error');
+          addLog(`[CAÍDA DEL SERVICIO] Al no contar con una segunda instancia EC2 en us-east-1b, tu sitio web ha quedado INACCESIBLE.`);
+        }
+      }, 1000);
+
+      // Restore after 4 seconds
+      setTimeout(() => {
+        if (azA) azA.innerText = 'Activa';
+        if (azA) azA.className = 'text-emerald-400 font-bold';
+        addLog(`[SISTEMA] Zona us-east-1a restablecida.`);
+      }, 4500);
+    }
+
+    function checkWinCondition() {
+      const currentLevelObj = levelsData[currentLevel];
+      const allPassed = currentLevelObj.reqs.every(req => req.check());
+
+      if (allPassed) {
+        playSound('success');
+        addLog(`[¡FELICITACIONES!] Has completado todos los requerimientos de la arquitectura del ${currentLevelObj.title}.`);
+        alert(`¡Excelente trabajo! Has construido con éxito la arquitectura para: ${currentLevelObj.title}`);
+      } else {
+        playSound('error');
+        addLog(`[INCOMPLETO] Revisa los requerimientos faltantes marcados con X en el panel derecho.`);
+      }
+    }
+
+    // INITIALIZATION
+    window.onload = function() {
+      changeLevel(1);
+      addLog(`[INICIO] Bienvenido a "Construye la Mejor Arquitectura AWS".`);
+    };
+  </script>
+</body>
+</html>

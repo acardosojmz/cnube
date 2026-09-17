@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AWS Arquitecto por un Día - Juego Interactivo</title>
+  <style>
+    :root {
+      --aws-dark: #1f2937;
+      --aws-orange: #ff9900;
+      --aws-blue: #0073bb;
+      --bg-color: #0f172a;
+      --card-bg: #1e293b;
+      --text-color: #f8fafc;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .game-container {
+      max-width: 800px;
+      width: 100%;
+      background-color: var(--card-bg);
+      border-radius: 12px;
+      padding: 30px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      border: 1px solid #334155;
+    }
+
+    header {
+      border-bottom: 2px solid var(--aws-orange);
+      padding-bottom: 15px;
+      margin-bottom: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      margin: 0;
+      color: var(--aws-orange);
+    }
+
+    .score-board {
+      background: #0f172a;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-weight: bold;
+      border: 1px solid var(--aws-blue);
+    }
+
+    .step-title {
+      color: #38bdf8;
+      margin-bottom: 15px;
+    }
+
+    .options-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-top: 20px;
+    }
+
+    .option-card {
+      background-color: #334155;
+      border: 2px solid transparent;
+      border-radius: 8px;
+      padding: 15px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .option-card:hover {
+      border-color: var(--aws-orange);
+      transform: translateY(-2px);
+    }
+
+    .option-card.selected {
+      border-color: var(--aws-orange);
+      background-color: #0284c7;
+    }
+
+    .btn-next {
+      margin-top: 25px;
+      background-color: var(--aws-orange);
+      color: #000;
+      font-weight: bold;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      width: 100%;
+      font-size: 1rem;
+    }
+
+    .btn-next:hover {
+      background-color: #e68a00;
+    }
+
+    .feedback {
+      margin-top: 15px;
+      padding: 10px;
+      border-radius: 6px;
+      display: none;
+    }
+
+    .feedback.correct {
+      background-color: #065f46;
+      color: #34d399;
+      display: block;
+    }
+
+    .feedback.incorrect {
+      background-color: #881337;
+      color: #fda4af;
+      display: block;
+    }
+
+    .terminal {
+      background-color: #000;
+      color: #00ff00;
+      font-family: 'Courier New', Courier, monospace;
+      padding: 15px;
+      border-radius: 6px;
+      margin-top: 15px;
+      height: 120px;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+<body>
+
+<div class="game-container">
+  <header>
+    <h1>☁️ Arquitecto AWS por un Día</h1>
+    <div class="score-board">Puntos: <span id="score">0</span> pts</div>
+  </header>
+
+  <div id="game-step">
+    <!-- El contenido se cargará dinámicamente con JS -->
+  </div>
+</div>
+
+<script>
+  // Datos de las fases del juego basados en el temario
+  const steps = [
+    {
+      id: 1,
+      title: "Misión 1: Configuración de Servidor y Cómputo (Temas 2.1 y 2.3)",
+      description: "Un cliente necesita un servidor web balanceado para tráfico HTTP estándar. ¿Qué combinación de Instancia EC2 y AMI deberías seleccionar?",
+      options: [
+        { text: "Instancia t3.micro + AMI con Amazon Linux 2023", correct: true, points: 25, reason: "¡Correcto! Es eficiente, rentable e ideal para un servidor web en producción." },
+        { text: "Instancia c6i.32xlarge + Windows Server AMI", correct: false, points: 0, reason: "Incorrecto: Es excesivamente costoso y sobredimensionado para tráfico web básico." },
+        { text: "Instancia i3en.xlarge + Mac OS AMI", correct: false, points: 0, reason: "Incorrecto: Instancia optimizada para almacenamiento masivo, no requerida para este caso." }
+      ]
+    },
+    {
+      id: 2,
+      title: "Misión 2: Alta Disponibilidad Global (Tema 2.2)",
+      description: "Para garantizar que el servidor no caiga si falla un centro de datos entero, ¿cómo organizas la infraestructura?",
+      options: [
+        { text: "Desplegar todas las instancias en una sola Zona de Disponibilidad (us-east-1a)", correct: false, points: 0, reason: "Incorrecto: Crea un único punto de fallo (SPOF)." },
+        { text: "Distribuir las instancias EC2 en 2 o más Zonas de Disponibilidad (AZs) distintas dentro de la misma Región", correct: true, points: 25, reason: "¡Excelente! La arquitectura Multi-AZ asegura alta disponibilidad ante desastres en un datacenter." },
+        { text: "Crear múltiples cuentas de AWS en diferentes países", correct: false, points: 5, reason: "Innecesario y complejo para este nivel de alta disponibilidad." }
+      ]
+    },
+    {
+      id: 3,
+      title: "Misión 3: Selección de Almacenamiento (Tema 2.4)",
+      description: "Necesitas almacenar la base de datos de producción con datos persistentes que no se pierdan al reiniciar la instancia. ¿Qué almacenamiento usas?",
+      options: [
+        { text: "Instance Store (Almacenamiento efímero)", correct: false, points: 0, reason: "Incorrecto: Instance Store pierde los datos si la instancia se detiene o falla." },
+        { text: "Volumen Amazon EBS (Elastic Block Store) gp3", correct: true, points: 25, reason: "¡Correcto! EBS ofrece almacenamiento de bloques persistente y de alto rendimiento." },
+        { text: "S3 Glacier Instant Retrieval", correct: false, points: 5, reason: "Incorrecto: Glacier es para archivo a largo plazo, no para bases de datos en vivo." }
+      ]
+    },
+    {
+      id: 4,
+      title: "Misión 4: Seguridad y Administración Remota (Temas 2.5 y 2.6)",
+      description: "Tu auditor de seguridad te exige eliminar el acceso SSH público (puerto 22 abierto a 0.0.0.0/0). ¿Cuál es la mejor práctica recomendada por AWS?",
+      options: [
+        { text: "Usar AWS Systems Manager (SSM) Session Manager para conectarse sin abrir puertos SSH de entrada", correct: true, points: 25, reason: "¡Perfecto! SSM elimina la necesidad de abrir el puerto 22 o gestionar llaves SSH públicas." },
+        { text: "Desactivar el firewall Security Group completamente", correct: false, points: 0, reason: "¡Peligro! Esto expone todo el servidor a ataques cibernéticos." },
+        { text: "Cambiar el puerto SSH 22 al puerto 80", correct: false, points: 0, reason: "Incorrecto: Mezclar protocolos compromete el tráfico web y la seguridad." }
+      ]
+    }
+  ];
+
+  let currentStep = 0;
+  let totalScore = 0;
+  let selectedOption = null;
+
+  function loadStep() {
+    const stepData = steps[currentStep];
+    const gameContainer = document.getElementById("game-step");
+
+    let optionsHTML = stepData.options.map((opt, index) => `
+      <div class="option-card" onclick="selectOption(${index})">
+        <strong>Opción ${index + 1}:</strong> ${opt.text}
+      </div>
+    `).join("");
+
+    gameContainer.innerHTML = `
+      <h2 class="step-title">${stepData.title}</h2>
+      <p>${stepData.description}</p>
+      <div class="options-grid">${optionsHTML}</div>
+      <div id="feedback" class="feedback"></div>
+      <button id="btn-submit" class="btn-next" onclick="validateAnswer()" disabled style="opacity: 0.5;">Confirmar Elección</button>
+    `;
+  }
+
+  function selectOption(index) {
+    selectedOption = index;
+    const cards = document.querySelectorAll(".option-card");
+    cards.forEach((card, i) => {
+      card.classList.toggle("selected", i === index);
+    });
+    
+    const btn = document.getElementById("btn-submit");
+    btn.disabled = false;
+    btn.style.opacity = "1";
+  }
+
+  function validateAnswer() {
+    const stepData = steps[currentStep];
+    const choice = stepData.options[selectedOption];
+    const feedbackEl = document.getElementById("feedback");
+    const btn = document.getElementById("btn-submit");
+
+    if (choice.correct) {
+      feedbackEl.className = "feedback correct";
+      totalScore += choice.points;
+    } else {
+      feedbackEl.className = "feedback incorrect";
+      totalScore += choice.points;
+    }
+
+    feedbackEl.innerText = choice.reason;
+    document.getElementById("score").innerText = totalScore;
+
+    // Deshabilitar interacción tras responder
+    document.querySelectorAll(".option-card").forEach(c => c.style.pointerEvents = "none");
+
+    if (currentStep < steps.length - 1) {
+      btn.innerText = "Siguiente Misión ➔";
+      btn.onclick = () => { currentStep++; loadStep(); };
+    } else {
+      btn.innerText = "Ver Resultado Final 🏆";
+      btn.onclick = showFinalScreen;
+    }
+  }
+
+  function showFinalScreen() {
+    const gameContainer = document.getElementById("game-step");
+    let rank = totalScore >= 80 ? "🥇 Arquitecto Senior AWS" : "🥈 Cloud Practitioner Jr.";
+    
+    gameContainer.innerHTML = `
+      <h2>🎉 ¡Misiones Completadas!</h2>
+      <p>Puntuación Final: <strong>${totalScore} / 100 puntos</strong></p>
+      <p>Rango obtenido: <strong>${rank}</strong></p>
+      <div class="terminal">
+        > Iniciando despliegue de servidor web...<br>
+        > Ejecutando script User Data: yum install -y httpd<br>
+        > Estado: HTTPD Running (Puerto 80 OK)<br>
+        > ¡Felicidades! Infraestructura IaaS AWS desplegada exitosamente.
+      </div>
+      <button class="btn-next" onclick="location.reload()">Reiniciar Juego 🔄</button>
+    `;
+  }
+
+  // Inicializar juego
+  loadStep();
+</script>
+
+</body>
+</html>
