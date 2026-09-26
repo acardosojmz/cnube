@@ -1,0 +1,1083 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full bg-slate-950 text-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cloud Rescue: Centro de Mando Infraestructura Cloud</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600;700&family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['Fira Code', 'monospace']
+          },
+          colors: {
+            cloud: {
+              50: '#f0f7ff',
+              500: '#0088ff',
+              600: '#0066cc',
+              900: '#0a192f',
+              950: '#030a16'
+            }
+          },
+          animation: {
+            'pulse-fast': 'pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            'glow': 'glow 2s infinite alternate',
+            'radar': 'radar 4s linear infinite'
+          },
+          keyframes: {
+            glow: {
+              '0%': { boxShadow: '0 0 5px rgba(0, 200, 255, 0.4)' },
+              '100%': { boxShadow: '0 0 20px rgba(0, 200, 255, 0.9)' }
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Custom CSS animations and scrollbar design */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0f172a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #334155;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #475569;
+    }
+    .grid-bg {
+      background-image: linear-gradient(to right, rgba(255,255,255,0.03) 1px, transparent 1px),
+                        linear-gradient(to bottom, rgba(255,255,255,0.03) 1px, transparent 1px);
+      background-size: 30px 30px;
+    }
+    .scanline {
+      background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.3) 50%, rgba(0,0,0,0.3));
+      background-size: 100% 4px;
+    }
+    .node-connecting-line {
+      stroke-dasharray: 8;
+      animation: dash 15s linear infinite;
+    }
+    @keyframes dash {
+      to { stroke-dashoffset: -1000; }
+    }
+  </style>
+</head>
+<body class="h-full flex flex-col font-sans select-none overflow-x-hidden grid-bg">
+
+  <!-- Top Navigation Header -->
+  <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur-md sticky top-0 z-50 px-4 py-3">
+    <div class="max-w-7xl mx-auto flex flex-wrap justify-between items-center gap-4">
+      <!-- Title & Branding -->
+      <div class="flex items-center space-x-3">
+        <div class="p-2.5 bg-gradient-to-tr from-cyan-500 to-blue-600 rounded-xl shadow-lg shadow-cyan-500/20 text-white font-bold text-xl">
+          <i class="fa-solid fa-cloud-bolt"></i>
+        </div>
+        <div>
+          <h1 class="text-xl font-extrabold tracking-tight bg-gradient-to-r from-cyan-400 via-sky-300 to-indigo-400 bg-clip-text text-transparent">
+            RESCATE EN LAS ALTURAS (EN LA NUBE)
+          </h1>
+          <p class="text-xs text-slate-400 font-mono">SRE (Site Reliability Engineering), Operaciones en la nube y  Arquitectura Ops Center</p>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <nav class="flex bg-slate-950/80 p-1 rounded-xl border border-slate-800 font-mono text-xs">
+        <button id="tab-campaign" onclick="switchTab('campaign')" class="px-4 py-2 rounded-lg font-semibold transition-all flex items-center gap-2 bg-cyan-600 text-white shadow-md">
+          <i class="fa-solid fa-flag"></i> Modo Misiones (4 Módulos)
+        </button>
+        <button id="tab-simulator" onclick="switchTab('simulator')" class="px-4 py-2 rounded-lg font-semibold transition-all flex items-center gap-2 text-slate-400 hover:text-white">
+          <i class="fa-solid fa-desktop"></i> Ops Room en Vivo
+        </button>
+        <button id="tab-wiki" onclick="switchTab('wiki')" class="px-4 py-2 rounded-lg font-semibold transition-all flex items-center gap-2 text-slate-400 hover:text-white">
+          <i class="fa-solid fa-book-bookmark"></i> Cloudpedia
+        </button>
+      </nav>
+
+      <!-- Global Controls & Sound -->
+      <div class="flex items-center gap-3">
+        <button id="audio-btn" onclick="toggleAudio()" class="p-2 text-slate-400 hover:text-cyan-400 bg-slate-800/80 hover:bg-slate-800 rounded-lg border border-slate-700 transition" title="Activar/Desactivar Sonido">
+          <i class="fa-solid fa-volume-high text-lg" id="audio-icon"></i>
+        </button>
+        <div class="text-right hidden sm:block">
+          <div class="text-xs text-slate-400">Rango SRE:</div>
+          <div id="user-rank" class="text-xs font-mono font-bold text-cyan-400">Junior Cloud Engineer</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Global Live Telemetry Meters -->
+  <div class="bg-slate-900/60 border-b border-slate-800/80 py-2 px-4 shadow-inner">
+    <div class="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4 font-mono text-xs">
+      <!-- Metric 1: SLA Availability -->
+      <div class="bg-slate-950/70 p-2.5 rounded-lg border border-slate-800 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-server text-emerald-400 text-sm"></i>
+          <span class="text-slate-400">SLA / Disponibilidad</span>
+        </div>
+        <span id="metric-sla" class="font-bold text-emerald-400 text-sm">99.99%</span>
+      </div>
+
+      <!-- Metric 2: Monthly FinOps Cost -->
+      <div class="bg-slate-950/70 p-2.5 rounded-lg border border-slate-800 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-sack-dollar text-amber-400 text-sm"></i>
+          <span class="text-slate-400">Costo Mensual</span>
+        </div>
+        <span id="metric-cost" class="font-bold text-amber-400 text-sm">$1,250 / mes</span>
+      </div>
+
+      <!-- Metric 3: Cloud Security Index -->
+      <div class="bg-slate-950/70 p-2.5 rounded-lg border border-slate-800 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-shield-halved text-cyan-400 text-sm"></i>
+          <span class="text-slate-400">Seguridad Cloud</span>
+        </div>
+        <span id="metric-sec" class="font-bold text-cyan-400 text-sm">85%</span>
+      </div>
+
+      <!-- Metric 4: Latency / Performance -->
+      <div class="bg-slate-950/70 p-2.5 rounded-lg border border-slate-800 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-bolt text-indigo-400 text-sm"></i>
+          <span class="text-slate-400">Latencia Promedio</span>
+        </div>
+        <span id="metric-latency" class="font-bold text-indigo-400 text-sm">45 ms</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Interactive Viewport -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 flex flex-col gap-6">
+
+    <!-- ================= VIEW 1: MISSION CAMPAIGN MODE ================= -->
+    <section id="view-campaign" class="flex flex-col gap-6">
+      
+      <!-- Module Navigator Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Module 4.1 -->
+        <div onclick="loadMission(1)" id="mod-card-1" class="cursor-pointer bg-slate-900 border-2 border-cyan-500 hover:border-cyan-400 rounded-xl p-4 transition-all hover:scale-[1.02] shadow-lg shadow-cyan-950/40 relative overflow-hidden group">
+          <div class="absolute -right-3 -bottom-3 text-cyan-500/10 text-6xl font-black group-hover:text-cyan-500/20 transition">4.1</div>
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-mono bg-cyan-500/20 text-cyan-300 px-2.5 py-0.5 rounded-full border border-cyan-500/30">Módulo 4.1</span>
+            <i id="mod-status-1" class="fa-solid fa-circle-play text-cyan-400 text-lg"></i>
+          </div>
+          <h3 class="font-bold text-white text-sm mb-1">Monitoreo de Recursos</h3>
+          <p class="text-xs text-slate-400 line-clamp-2">Métricas CPU/RAM, Logs de APM, Alertas Tempranas y Umbrales de Telemetría.</p>
+        </div>
+
+        <!-- Module 4.2 -->
+        <div onclick="loadMission(2)" id="mod-card-2" class="cursor-pointer bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-xl p-4 transition-all hover:scale-[1.02] opacity-80 hover:opacity-100 relative overflow-hidden group">
+          <div class="absolute -right-3 -bottom-3 text-slate-700/20 text-6xl font-black">4.2</div>
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-mono bg-indigo-500/20 text-indigo-300 px-2.5 py-0.5 rounded-full border border-indigo-500/30">Módulo 4.2</span>
+            <i id="mod-status-2" class="fa-solid fa-lock text-slate-500 text-lg"></i>
+          </div>
+          <h3 class="font-bold text-white text-sm mb-1">Escalabilidad y Alta Disponibilidad</h3>
+          <p class="text-xs text-slate-400 line-clamp-2">Auto-Scaling Groups, Balanceadores de Carga (ALB) y Réplicas Multi-AZ.</p>
+        </div>
+
+        <!-- Module 4.3 -->
+        <div onclick="loadMission(3)" id="mod-card-3" class="cursor-pointer bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-xl p-4 transition-all hover:scale-[1.02] opacity-80 hover:opacity-100 relative overflow-hidden group">
+          <div class="absolute -right-3 -bottom-3 text-slate-700/20 text-6xl font-black">4.3</div>
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-mono bg-purple-500/20 text-purple-300 px-2.5 py-0.5 rounded-full border border-purple-500/30">Módulo 4.3</span>
+            <i id="mod-status-3" class="fa-solid fa-lock text-slate-500 text-lg"></i>
+          </div>
+          <h3 class="font-bold text-white text-sm mb-1">Seguridad en la Nube</h3>
+          <p class="text-xs text-slate-400 line-clamp-2">Firewalls WAF, Security Groups, Mínimo Privilegio IAM y Parches de Vulnerabilidades.</p>
+        </div>
+
+        <!-- Module 4.4 -->
+        <div onclick="loadMission(4)" id="mod-card-4" class="cursor-pointer bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-xl p-4 transition-all hover:scale-[1.02] opacity-80 hover:opacity-100 relative overflow-hidden group">
+          <div class="absolute -right-3 -bottom-3 text-slate-700/20 text-6xl font-black">4.4</div>
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-mono bg-emerald-500/20 text-emerald-300 px-2.5 py-0.5 rounded-full border border-emerald-500/30">Módulo 4.4</span>
+            <i id="mod-status-4" class="fa-solid fa-lock text-slate-500 text-lg"></i>
+          </div>
+          <h3 class="font-bold text-white text-sm mb-1">Optimización de Costos</h3>
+          <p class="text-xs text-slate-400 line-clamp-2">Right-sizing de Instancias, Volúmenes Huérfanos FinOps y Reserved/Spot Instances.</p>
+        </div>
+      </div>
+
+      <!-- Mission Interactive Workspace -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        
+        <!-- Left Column: Incident Briefing & Action Options (5 cols) -->
+        <div class="lg:col-span-5 flex flex-col gap-4">
+          <!-- Mission Overview Container -->
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl relative overflow-hidden">
+            <div class="flex items-center gap-2 text-cyan-400 font-mono text-xs font-bold uppercase tracking-wider mb-2">
+              <span class="animate-ping inline-flex h-2 w-2 rounded-full bg-cyan-400"></span>
+              Mitigación de emergencias en la nube
+            </div>
+            <h2 id="mission-title" class="text-xl font-bold text-white mb-2">Cargando Módulo...</h2>
+            <p id="mission-desc" class="text-sm text-slate-300 leading-relaxed mb-4">
+              Cargando escenario de crisis...
+            </p>
+
+            <div class="p-3 bg-slate-950 rounded-xl border border-slate-800/80 mb-4 font-mono text-xs text-amber-300 flex items-start gap-2.5">
+              <i class="fa-solid fa-triangle-exclamation text-amber-400 text-base mt-0.5"></i>
+              <div>
+                <span class="font-bold text-amber-400 block mb-0.5">Diagnóstico Técnico:</span>
+                <span id="mission-diagnostic">--</span>
+              </div>
+            </div>
+
+            <!-- Strategic Action Choices -->
+            <div class="space-y-3">
+              <span class="text-xs font-mono text-slate-400 font-semibold block uppercase tracking-wider">Acciones Correctivas Disponibles:</span>
+              <div id="mission-choices" class="space-y-2.5">
+                <!-- Injected via JavaScript -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Explanation Box / Learning Notes -->
+          <div id="explanation-box" class="hidden bg-slate-900/90 border border-cyan-500/30 rounded-2xl p-5 shadow-xl transition-all">
+            <div class="flex items-center justify-between mb-2">
+              <span class="text-xs font-mono font-bold text-cyan-400 flex items-center gap-2">
+                <i class="fa-solid fa-graduation-cap"></i> Concepto Arquitectura Cloud
+              </span>
+              <span id="result-badge" class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                ¡Solución Correcta!
+              </span>
+            </div>
+            <p id="explanation-text" class="text-xs text-slate-300 leading-relaxed font-sans mb-4">
+              Explicación técnica detallada.
+            </p>
+            <button id="next-mission-btn" onclick="nextMission()" class="w-full py-2.5 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white text-xs font-mono font-bold rounded-xl shadow-lg transition">
+              Siguiente Desafío Cloud <i class="fa-solid fa-arrow-right ml-1"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Right Column: Interactive Cloud Architecture Topology Diagram (7 cols) -->
+        <div class="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col justify-between min-h-[480px]">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+            <div class="flex items-center gap-2">
+              <i class="fa-solid fa-network-wired text-cyan-400"></i>
+              <span class="font-mono text-xs font-bold text-slate-200 uppercase tracking-wide">Topología de Infraestructura Activa</span>
+            </div>
+            <div class="flex items-center gap-3 text-xs font-mono">
+              <span class="flex items-center gap-1 text-emerald-400"><i class="fa-solid fa-circle text-[8px]"></i> Saludable</span>
+              <span class="flex items-center gap-1 text-amber-400"><i class="fa-solid fa-circle text-[8px]"></i> Alerta</span>
+              <span class="flex items-center gap-1 text-rose-500"><i class="fa-solid fa-circle text-[8px]"></i> Crítico</span>
+            </div>
+          </div>
+
+          <!-- Interactive Topology Canvas / Canvas View -->
+          <div id="topology-container" class="relative flex-1 bg-slate-950 rounded-xl border border-slate-800 p-6 flex flex-col justify-center items-center overflow-hidden">
+            <!-- Background Topology Overlay Grid -->
+            <svg class="absolute inset-0 w-full h-full pointer-events-none" id="svg-connections">
+              <!-- Animated SVG Line connections drawn by JavaScript -->
+            </svg>
+
+            <!-- Topology Nodes Container -->
+            <div id="topology-nodes" class="w-full max-w-lg grid grid-cols-3 gap-6 relative z-10 text-center">
+              <!-- Nodes populated via JavaScript -->
+            </div>
+          </div>
+
+          <!-- Topology Live Console Logs -->
+          <div class="mt-4 bg-slate-950 p-3 rounded-xl border border-slate-800 font-mono text-[11px] h-28 overflow-y-auto" id="console-logs">
+            <div class="text-slate-500">[SYSTEM INIT] Observabilidad Cloud activa. Esperando telemetría...</div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ================= VIEW 2: REAL-TIME SIMULATOR ROOM ================= -->
+    <section id="view-simulator" class="hidden flex flex-col gap-6">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h2 class="text-lg font-bold text-white flex items-center gap-2">
+            <i class="fa-solid fa-tower-observation text-cyan-400"></i> Simulador SRE Cloud en Tiempo Real
+          </h2>
+          <p class="text-xs text-slate-400">Mantén el sistema en línea reaccionando a incidentes dinámicos de costos, fallas de servidores y ciberataques.</p>
+        </div>
+        <div class="flex items-center gap-3 font-mono">
+          <button id="sim-start-btn" onclick="toggleSimulator()" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-lg transition flex items-center gap-2">
+            <i class="fa-solid fa-play"></i> Iniciar Simulación
+          </button>
+          <div class="text-xs bg-slate-950 px-3 py-2 rounded-xl border border-slate-800 text-slate-300">
+            Tiempo de Vuelo: <span id="sim-timer" class="text-cyan-400 font-bold">00:00</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Real-time Metrics Chart & Control Deck -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        <!-- Interactive Incident Feed -->
+        <div class="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col justify-between">
+          <div class="flex justify-between items-center mb-4 border-b border-slate-800 pb-2">
+            <h3 class="text-sm font-bold font-mono text-cyan-400 flex items-center gap-2">
+              <i class="fa-solid fa-bell"></i> Feed de Incidentes en Tiempo Real
+            </h3>
+            <span class="text-xs font-mono text-slate-500" id="sim-status-badge">Estado: DETENIDO</span>
+          </div>
+
+          <!-- Feed list -->
+          <div id="sim-incident-feed" class="flex-1 space-y-3 min-h-[250px] max-h-[350px] overflow-y-auto pr-1">
+            <div class="p-4 bg-slate-950 border border-slate-800 rounded-xl text-center text-xs text-slate-500 font-mono">
+              Haz clic en "Iniciar Simulación" para comenzar la transmisión de tráfico e incidentes cloud.
+            </div>
+          </div>
+
+          <!-- Quick Actions Deck -->
+          <div class="mt-4 pt-3 border-t border-slate-800">
+            <div class="text-xs font-mono text-slate-400 mb-2 font-semibold">Acciones Rápidas de Mitigación:</div>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 font-mono text-xs">
+              <button onclick="triggerSimAction('autoscale')" class="p-2.5 bg-slate-950 hover:bg-cyan-950/60 border border-slate-800 hover:border-cyan-500/50 text-cyan-300 rounded-xl transition flex flex-col items-center gap-1 text-center">
+                <i class="fa-solid fa-up-right-and-down-left-from-center text-cyan-400 text-sm"></i>
+                <span>Escalar Grupo</span>
+              </button>
+
+              <button onclick="triggerSimAction('waf')" class="p-2.5 bg-slate-950 hover:bg-purple-950/60 border border-slate-800 hover:border-purple-500/50 text-purple-300 rounded-xl transition flex flex-col items-center gap-1 text-center">
+                <i class="fa-solid fa-shield-virus text-purple-400 text-sm"></i>
+                <span>Reglas WAF</span>
+              </button>
+
+              <button onclick="triggerSimAction('finops')" class="p-2.5 bg-slate-950 hover:bg-emerald-950/60 border border-slate-800 hover:border-emerald-500/50 text-emerald-300 rounded-xl transition flex flex-col items-center gap-1 text-center">
+                <i class="fa-solid fa-broom text-emerald-400 text-sm"></i>
+                <span>Limpiar Zombie EBS</span>
+              </button>
+
+              <button onclick="triggerSimAction('failover')" class="p-2.5 bg-slate-950 hover:bg-amber-950/60 border border-slate-800 hover:border-amber-500/50 text-amber-300 rounded-xl transition flex flex-col items-center gap-1 text-center">
+                <i class="fa-solid fa-arrows-split-up-and-left text-amber-400 text-sm"></i>
+                <span>Failover Multi-AZ</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Latency vs Cost Real-Time Graph -->
+        <div class="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl flex flex-col justify-between">
+          <div>
+            <h3 class="text-sm font-bold font-mono text-slate-200 mb-1 flex items-center gap-2">
+              <i class="fa-solid fa-chart-line text-cyan-400"></i> Telemetría de Rendimiento vs FinOps
+            </h3>
+            <p class="text-xs text-slate-400 mb-3">Gráfico en vivo de Latencia (ms) y Costos ($/h).</p>
+          </div>
+
+          <!-- Canvas Graph -->
+          <div class="bg-slate-950 rounded-xl border border-slate-800 p-2 flex-1 flex items-center justify-center min-h-[220px]">
+            <canvas id="telemetryChart" class="w-full h-full max-h-[240px]"></canvas>
+          </div>
+
+          <!-- Graph Legend -->
+          <div class="flex items-center justify-center gap-6 mt-3 font-mono text-xs">
+            <span class="flex items-center gap-2 text-cyan-400">
+              <span class="w-3 h-0.5 bg-cyan-400 inline-block"></span> Latencia (ms)
+            </span>
+            <span class="flex items-center gap-2 text-amber-400">
+              <span class="w-3 h-0.5 bg-amber-400 inline-block"></span> Costo FinOps ($)
+            </span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ================= VIEW 3: CLOUDPEDIA WIKI ================= -->
+    <section id="view-wiki" class="hidden flex flex-col gap-6">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+        <h2 class="text-xl font-extrabold text-white mb-2 flex items-center gap-2">
+          <i class="fa-solid fa-book-open-reader text-cyan-400"></i> Cloudpedia: Guía de Referencia Arquitectónica
+        </h2>
+        <p class="text-xs text-slate-400 mb-6">Compendio práctico de conceptos clave en Administración, Monitoreo, Seguridad y Optimización de Nube.</p>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          
+          <!-- 4.1 Monitoreo -->
+          <div class="bg-slate-950 p-5 rounded-xl border border-cyan-500/30">
+            <div class="flex items-center gap-3 mb-3 text-cyan-400 font-bold font-mono">
+              <div class="p-2 bg-cyan-500/20 rounded-lg"><i class="fa-solid fa-chart-simple"></i></div>
+              <h3>4.1 Monitoreo de Recursos y Observabilidad</h3>
+            </div>
+            <ul class="text-xs text-slate-300 space-y-2 list-disc list-inside leading-relaxed">
+              <li><strong class="text-white">Métricas Fundamentales:</strong> CPU, Memoria RAM, I/O de Disco, Throughput de Red y Tasa de Errores (HTTP 5xx).</li>
+              <li><strong class="text-white">APM y Trazado:</strong> Seguimiento paso a paso de peticiones distribuídas entre microservicios (Datadog, AWS CloudWatch, Prometheus).</li>
+              <li><strong class="text-white">Alertas Proactivas:</strong> Configuración de umbrales dinámicos antes de que se impacte la experiencia del usuario final.</li>
+            </ul>
+          </div>
+
+          <!-- 4.2 Escalabilidad -->
+          <div class="bg-slate-950 p-5 rounded-xl border border-indigo-500/30">
+            <div class="flex items-center gap-3 mb-3 text-indigo-400 font-bold font-mono">
+              <div class="p-2 bg-indigo-500/20 rounded-lg"><i class="fa-solid fa-network-wired"></i></div>
+              <h3>4.2 Escalabilidad y Alta Disponibilidad</h3>
+            </div>
+            <ul class="text-xs text-slate-300 space-y-2 list-disc list-inside leading-relaxed">
+              <li><strong class="text-white">Vertical vs Horizontal:</strong> Escalar verticalmente (aumentar RAM/CPU a una instancia) vs Horizontalmente (añadir más nodos al cluster).</li>
+              <li><strong class="text-white">Load Balancers (ALB/NLB):</strong> Distribución uniforme del tráfico entrante entre servidores saludables.</li>
+              <li><strong class="text-white">Despliegues Multi-AZ:</strong> Replicación de bases de datos e infraestructura en distintas Zonas de Disponibilidad geográficas para tolerancia a fallos.</li>
+            </ul>
+          </div>
+
+          <!-- 4.3 Seguridad -->
+          <div class="bg-slate-950 p-5 rounded-xl border border-purple-500/30">
+            <div class="flex items-center gap-3 mb-3 text-purple-400 font-bold font-mono">
+              <div class="p-2 bg-purple-500/20 rounded-lg"><i class="fa-solid fa-shield-halved"></i></div>
+              <h3>4.3 Seguridad en la Nube (DevSecOps)</h3>
+            </div>
+            <ul class="text-xs text-slate-300 space-y-2 list-disc list-inside leading-relaxed">
+              <li><strong class="text-white">Mínimo Privilegio (IAM):</strong> Conceder exclusivamente los permisos necesarios a usuarios y roles de aplicación.</li>
+              <li><strong class="text-white">Security Groups & WAF:</strong> Reglas de firewall de red (puertos permitidos) y WAF para frenar SQL Injection, XSS y DDoS.</li>
+              <li><strong class="text-white">Zero Trust & Encriptación:</strong> Cifrado de datos en reposito (KMS) y en tránsito (TLS/SSL).</li>
+            </ul>
+          </div>
+
+          <!-- 4.4 Costos -->
+          <div class="bg-slate-950 p-5 rounded-xl border border-emerald-500/30">
+            <div class="flex items-center gap-3 mb-3 text-emerald-400 font-bold font-mono">
+              <div class="p-2 bg-emerald-500/20 rounded-lg"><i class="fa-solid fa-coins"></i></div>
+              <h3>4.4 Optimización de Costos (FinOps)</h3>
+            </div>
+            <ul class="text-xs text-slate-300 space-y-2 list-disc list-inside leading-relaxed">
+              <li><strong class="text-white">Right-sizing:</strong> Ajuste del tamaño exacto de las instancias según el consumo real observado.</li>
+              <li><strong class="text-white">Recursos Zombie:</strong> Eliminación de volúmenes de disco desasociados (EBS unattached) e IPs elásticas sin uso.</li>
+              <li><strong class="text-white">Estrategias de Compra:</strong> Uso de Spot Instances para cargas tolerantes a fallos y Instancias Reservadas/Savings Plans para cargas estables.</li>
+            </ul>
+          </div>
+
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Level Victory Modal -->
+  <div id="modal-victory" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-slate-900 border border-cyan-500/40 rounded-2xl max-w-md w-full p-6 text-center shadow-2xl shadow-cyan-500/20">
+      <div class="w-16 h-16 bg-gradient-to-tr from-cyan-500 to-emerald-400 rounded-full flex items-center justify-center mx-auto mb-4 text-3xl text-slate-950 font-bold shadow-lg">
+        <i class="fa-solid fa-trophy"></i>
+      </div>
+      <h3 class="text-xl font-extrabold text-white mb-2">¡Módulo Completado!</h3>
+      <p id="victory-message" class="text-xs text-slate-300 mb-6 leading-relaxed">
+        Has estabilizado la infraestructura cloud con métricas óptimas.
+      </p>
+      <button onclick="closeVictoryModal()" class="w-full py-3 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-mono text-xs font-bold rounded-xl shadow-lg transition">
+        Continuar Operaciones
+      </button>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-800 bg-slate-950/80 py-4 text-center font-mono text-xs text-slate-500">
+    <p>Cómputo en la nube &copy; 2026 | Simulación Interactiva Educativa de Infraestructura Cloud</p>
+  </footer>
+
+  <script>
+    /* ====================================================================
+       CLOUD RESCUE ENGINE & GAME STATE
+       ==================================================================== */
+
+    // Sound Synthesizer via Web Audio API (No external sound files required)
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    let soundEnabled = true;
+
+    function playSound(type) {
+      if (!soundEnabled) return;
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        const now = audioCtx.currentTime;
+
+        if (type === 'click') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(600, now);
+          osc.frequency.exponentialRampToValueAtTime(200, now + 0.05);
+          gain.gain.setValueAtTime(0.1, now);
+          gain.gain.linearRampToValueAtTime(0, now + 0.05);
+          osc.start(now);
+          osc.stop(now + 0.05);
+        } else if (type === 'success') {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(440, now);
+          osc.frequency.exponentialRampToValueAtTime(880, now + 0.2);
+          gain.gain.setValueAtTime(0.15, now);
+          gain.gain.linearRampToValueAtTime(0, now + 0.2);
+          osc.start(now);
+          osc.stop(now + 0.2);
+        } else if (type === 'alert') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(220, now);
+          osc.frequency.linearRampToValueAtTime(110, now + 0.3);
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.linearRampToValueAtTime(0, now + 0.3);
+          osc.start(now);
+          osc.stop(now + 0.3);
+        }
+      } catch(e) {
+        // Fallback silently if audio fails
+      }
+    }
+
+    function toggleAudio() {
+      soundEnabled = !soundEnabled;
+      const icon = document.getElementById('audio-icon');
+      if (soundEnabled) {
+        icon.className = 'fa-solid fa-volume-high text-lg';
+      } else {
+        icon.className = 'fa-solid fa-volume-xmark text-lg text-slate-600';
+      }
+    }
+
+    // Main Game State
+    const gameState = {
+      currentMissionIndex: 1,
+      completedMissions: [],
+      sla: 99.99,
+      cost: 1250,
+      security: 85,
+      latency: 45,
+      score: 0,
+      simActive: false,
+      simTime: 0,
+      simInterval: null,
+      telemetryHistory: []
+    };
+
+    /* ====================================================================
+       MISSION DATA (COVERING 4.1, 4.2, 4.3, 4.4)
+       ==================================================================== */
+    const missions = [
+      {
+        id: 1,
+        module: "4.1 Monitoreo de Recursos",
+        title: "Picos Inesperados de CPU y Ceguera de Métricas",
+        desc: "La aplicación de comercio electrónico está experimentando lentitud extrema durante una venta flash. Las instancias EC2 principales están saturadas al 98% de CPU, pero no se configuraron alarmas tempranas para detectar el agotamiento de memoria y hilos de aplicación.",
+        diagnostic: "Falta de Observabilidad en Tiempo Real y Ceguera de Métricas APM en la capa de servidores de aplicación.",
+        nodes: [
+          { id: "alb", name: "Load Balancer", type: "lb", status: "healthy", detail: "HTTP 200/503 Mix" },
+          { id: "app1", name: "App Server #1", type: "server", status: "critical", detail: "CPU: 98% | RAM: 94%" },
+          { id: "app2", name: "App Server #2", type: "server", status: "critical", detail: "CPU: 97% | RAM: 91%" },
+          { id: "db", name: "PostgreSQL DB", type: "db", status: "healthy", detail: "Conexiones: Normal" }
+        ],
+        logs: [
+          "[CRITICAL] App Server #1 CPU utilization > 95% threshold sustained for 10m",
+          "[WARN] Latency increased from 45ms to 850ms",
+          "[ALERT] APM metric missing: Garbage collection pause time high"
+        ],
+        choices: [
+          {
+            text: "Aumentar manualmente el tamaño de los servidores sin métricas avanzadas.",
+            correct: false,
+            feedback: "Aumentar tamaño sin observabilidad adecuada es costoso y no resuelve la falta de visibilidad del problema de fondo."
+          },
+          {
+            text: "Implementar agente APM (Prometheus/CloudWatch) para monitoreo de métricas finas y alarmas proactivas al 75% de CPU.",
+            correct: true,
+            feedback: "¡Excelente! Un monitoreo continuo y agentes APM otorgan métricas detalladas y alertas preventivas antes de la caída del servicio.",
+            slaDelta: +0.05,
+            costDelta: +50,
+            secDelta: +5,
+            latDelta: -300
+          },
+          {
+            text: "Ignorar las alertas y reiniciar los servidores repetidamente.",
+            correct: false,
+            feedback: "Reiniciar los servidores genera caídas intermitentes adicionales de SLA para los clientes actvos."
+          }
+        ],
+        explanation: "El monitoreo de recursos (4.1) es la piedra angular del SRE. Implementar soluciones de telemetría y métricas APM permite establecer alertas proactivas para prevenir caídas de disponibilidad antes de impactar a los usuarios finales."
+      },
+      {
+        id: 2,
+        module: "4.2 Escalabilidad y Alta Disponibilidad",
+        title: "Punto Único de Falla y Tráfico Creciente",
+        desc: "Toda la infraestructura depende de una sola base de datos en una sola Zona de Disponibilidad (Single-AZ) y un número fijo de servidores que no se adaptan automáticamente a las fluctuaciones de usuarios.",
+        diagnostic: "Falta de Autoscaling Group (ASG) y réplicas de lecturas Multi-AZ ante picos sostenidos de demanda.",
+        nodes: [
+          { id: "alb", name: "ALB Balancer", type: "lb", status: "alert", detail: "Solicitudes: 12,000 req/s" },
+          { id: "asg", name: "Auto-Scaling", type: "server", status: "alert", detail: "Capacidad Fija: 2 Nodos" },
+          { id: "db_main", name: "Master DB (us-east-1a)", type: "db", status: "critical", detail: "Single-AZ (No Failover)" }
+        ],
+        logs: [
+          "[ALERT] ALB target group capacity exceeded!",
+          "[CRITICAL] Database write IOPS throttled. No standby instance available in alternate AZ!"
+        ],
+        choices: [
+          {
+            text: "Configurar un Grupo de Auto-Escalado (ASG) con políticas de CPU y migrar la Base de Datos a arquitectura Multi-AZ.",
+            correct: true,
+            feedback: "¡Formidable! El escalado horizontal dinámico responde al tráfico entrante y la réplica Multi-AZ garantiza alta disponibilidad ante fallas de zona.",
+            slaDelta: +0.1,
+            costDelta: +120,
+            secDelta: 0,
+            latDelta: -120
+          },
+          {
+            text: "Deshabilitar el balanceador de carga y direccionar todo el tráfico a un solo servidor gigante.",
+            correct: false,
+            feedback: "Esto destruye la alta disponibilidad y genera un punto único de falla aún peor."
+          },
+          {
+            text: "Duplicar la base de datos manualmente una vez por semana.",
+            correct: false,
+            feedback: "Las réplicas manuales sufren de desincronización de datos masiva y no proveen failover automático."
+          }
+        ],
+        explanation: "La escalabilidad y alta disponibilidad (4.2) garantizan continuidad de negocio. Los Auto-Scaling Groups adaptan los recursos según la demanda, mientras que las arquitecturas Multi-AZ mitigan caídas físicas de datacenters enteros."
+      },
+      {
+        id: 3,
+        module: "4.3 Seguridad en la Nube",
+        title: "Brecha de Seguridad, Puertos Abiertos y Permisos IAM Excesivos",
+        desc: "Se ha detectado tráfico malicioso dirigido al puerto 22 (SSH) abierto a todo Internet (0.0000/0) y una clave de acceso IAM con permisos 'AdministratorAccess' comprometida.",
+        diagnostic: "Violación grave de las directrices de Seguridad Cloud: Ausencia de WAF, Security Group laxo y permisos excesivos.",
+        nodes: [
+          { id: "waf", name: "WAF Firewall", type: "shield", status: "critical", detail: "Inactivo / Sin reglas" },
+          { id: "sg", name: "Security Group", type: "shield", status: "critical", detail: "Port 22 OPEN 0.0.0.0/0" },
+          { id: "iam", name: "Roles IAM", type: "lock", status: "alert", detail: "Admin Access no restringido" }
+        ],
+        logs: [
+          "[SECURITY CRITICAL] SSH Brute-force attack detected from multiple external IPs!",
+          "[SECURITY WARN] IAM User 'deploy-bot' using full AdministratorAccess key without MFA!"
+        ],
+        choices: [
+          {
+            text: "Cambiar la contraseña del usuario pero dejar los puertos de red abiertos para facilitar el trabajo.",
+            correct: false,
+            feedback: "Dejar puertos abiertos a 0.0.0.0/0 expone continuamente los servicios a ataques automatizados de fuerza bruta."
+          },
+          {
+            text: "Cerrar puerto SSH a 0.0.0.0/0, activar Web Application Firewall (WAF) y aplicar Mínimo Privilegio en IAM.",
+            correct: true,
+            feedback: "¡Excelente decisión de ciberseguridad! Cerrar vector de ataque con WAF e IAM restringido garantiza cumplimiento de Zero Trust.",
+            slaDelta: +0.02,
+            costDelta: +30,
+            secDelta: +35,
+            latDelta: 0
+          },
+          {
+            text: "Desactivar por completo el firewall para mejorar la latencia de red.",
+            correct: false,
+            feedback: "Desactivar el firewall expone completamente la infraestructura cloud a ataques devastadores."
+          }
+        ],
+        explanation: "La seguridad en la nube (4.3) sigue el Modelo de Responsabilidad Compartida. Aplicar el Principio de Mínimo Privilegio (IAM), firewalls (Security Groups) y WAF detiene ataques comunes antes de que alcancen los datos sensibles."
+      },
+      {
+        id: 4,
+        module: "4.4 Optimización de Costos",
+        title: "Desperdicio de Presupuesto FinOps y Recursos Zombie",
+        desc: "La factura mensual de la nube ha aumentado un 180%. Existen 15 volúmenes de almacenamiento EBS desasociados ('unattached') generando costos, e instancias con recursos sobreprovisionados al 5% de uso medio.",
+        diagnostic: "Falta de gobernanza FinOps, sobreprovisionamiento y presencia de recursos en estado zombie.",
+        nodes: [
+          { id: "ebs", name: "Volúmenes EBS", type: "disk", status: "critical", detail: "15 EBS Huérfanos ($800/m)" },
+          { id: "instances", name: "EC2 Instances", type: "server", status: "alert", detail: "Tipo: i3.16xlarge (Uso CPU: 4%)" },
+          { id: "s3", name: "S3 Storage", type: "db", status: "healthy", detail: "Sin Lifecycle Policy" }
+        ],
+        logs: [
+          "[FINOPS WARN] Monthly budget limit exceeded by $2,400!",
+          "[FINOPS ALERT] 15 Unattached GP3 EBS Volumes detected without active attachments.",
+          "[FINOPS WARN] Instance i3.16xlarge average CPU usage < 5% over last 30 days."
+        ],
+        choices: [
+          {
+            text: "Eliminar volúmenes unattached huérfanos, aplicar Right-Sizing a instancias y definir políticas de Lifecycle en S3.",
+            correct: true,
+            feedback: "¡Magistral! La práctica FinOps reduce drásticamente los gastos innecesarios sin comprometer la capacidad ni el rendimiento.",
+            slaDelta: 0,
+            costDelta: -650,
+            secDelta: 0,
+            latDelta: 0
+          },
+          {
+            text: "Apagar todas las bases de datos durante las noches para ahorrar dinero sin avisar a los clientes.",
+            correct: false,
+            feedback: "Apagar servicios en producción rompe los acuerdos de nivel de servicio (SLA) con los usuarios globales."
+          },
+          {
+            text: "Ignorar la factura y solicitar una expansión de presupuesto al equipo directivo.",
+            correct: false,
+            feedback: "Ignorar la ineficiencia atenta contra los principios de arquitectura cloud bien orquestada (Well-Architected Framework)."
+          }
+        ],
+        explanation: "La optimización de costos FinOps (4.4) busca maximizar el valor de la inversión cloud. El 'Right-sizing' (redimensionamiento), la eliminación de recursos huérfanos y los planes de reserva optimizan el gasto operativamente."
+      }
+    ];
+
+    /* ====================================================================
+       TAB MANAGEMENT
+       ==================================================================== */
+    function switchTab(tab) {
+      playSound('click');
+      document.getElementById('view-campaign').classList.add('hidden');
+      document.getElementById('view-simulator').classList.add('hidden');
+      document.getElementById('view-wiki').classList.add('hidden');
+
+      document.getElementById('tab-campaign').className = "px-4 py-2 rounded-lg font-semibold transition-all flex items-center gap-2 text-slate-400 hover:text-white";
+      document.getElementById('tab-simulator').className = "px-4 py-2 rounded-lg font-semibold transition-all flex items-center gap-2 text-slate-400 hover:text-white";
+      document.getElementById('tab-wiki').className = "px-4 py-2 rounded-lg font-semibold transition-all flex items-center gap-2 text-slate-400 hover:text-white";
+
+      if (tab === 'campaign') {
+        document.getElementById('view-campaign').classList.remove('hidden');
+        document.getElementById('tab-campaign').className = "px-4 py-2 rounded-lg font-semibold transition-all flex items-center gap-2 bg-cyan-600 text-white shadow-md";
+      } else if (tab === 'simulator') {
+        document.getElementById('view-simulator').classList.remove('hidden');
+        document.getElementById('tab-simulator').className = "px-4 py-2 rounded-lg font-semibold transition-all flex items-center gap-2 bg-cyan-600 text-white shadow-md";
+        initChart();
+      } else if (tab === 'wiki') {
+        document.getElementById('view-wiki').classList.remove('hidden');
+        document.getElementById('tab-wiki').className = "px-4 py-2 rounded-lg font-semibold transition-all flex items-center gap-2 bg-cyan-600 text-white shadow-md";
+      }
+    }
+
+    /* ====================================================================
+       MISSION ENGINE LOGIC
+       ==================================================================== */
+    function loadMission(id) {
+      playSound('click');
+      gameState.currentMissionIndex = id;
+      const m = missions.find(x => x.id === id);
+      if (!m) return;
+
+      // Update Active Card Styling
+      for (let i = 1; i <= 4; i++) {
+        const card = document.getElementById(`mod-card-${i}`);
+        if (i === id) {
+          card.className = "cursor-pointer bg-slate-900 border-2 border-cyan-500 rounded-xl p-4 transition-all shadow-lg shadow-cyan-950/40 relative overflow-hidden group";
+        } else if (gameState.completedMissions.includes(i)) {
+          card.className = "cursor-pointer bg-slate-900/90 border border-emerald-500/50 rounded-xl p-4 transition-all relative overflow-hidden group";
+        } else {
+          card.className = "cursor-pointer bg-slate-900 border border-slate-800 hover:border-slate-700 rounded-xl p-4 transition-all opacity-80 hover:opacity-100 relative overflow-hidden group";
+        }
+      }
+
+      // Populate Mission Briefing
+      document.getElementById('mission-title').textContent = `${m.module}: ${m.title}`;
+      document.getElementById('mission-desc').textContent = m.desc;
+      document.getElementById('mission-diagnostic').textContent = m.diagnostic;
+
+      // Hide Explanation Box
+      document.getElementById('explanation-box').classList.add('hidden');
+
+      // Populate Choices
+      const choicesContainer = document.getElementById('mission-choices');
+      choicesContainer.innerHTML = '';
+
+      m.choices.forEach((choice, idx) => {
+        const btn = document.createElement('button');
+        btn.className = "w-full text-left p-3.5 bg-slate-950 hover:bg-slate-800/80 border border-slate-800 hover:border-cyan-500/50 rounded-xl font-sans text-xs transition flex items-start gap-3 text-slate-200 group";
+        btn.onclick = () => selectChoice(choice);
+
+        btn.innerHTML = `
+          <span class="w-5 h-5 rounded-full bg-slate-800 group-hover:bg-cyan-500/20 text-slate-400 group-hover:text-cyan-300 flex items-center justify-center font-mono font-bold text-[11px] shrink-0 mt-0.5">${String.fromCharCode(65 + idx)}</span>
+          <span class="leading-relaxed">${choice.text}</span>
+        `;
+        choicesContainer.appendChild(btn);
+      });
+
+      // Render Topology & Console Logs
+      renderTopology(m.nodes);
+      renderLogs(m.logs);
+    }
+
+    function renderTopology(nodes) {
+      const container = document.getElementById('topology-nodes');
+      container.innerHTML = '';
+
+      nodes.forEach(node => {
+        let iconClass = 'fa-server';
+        if (node.type === 'lb') iconClass = 'fa-network-wired';
+        if (node.type === 'db') iconClass = 'fa-database';
+        if (node.type === 'shield') iconClass = 'fa-shield-halved';
+        if (node.type === 'lock') iconClass = 'fa-lock';
+        if (node.type === 'disk') iconClass = 'fa-hard-drive';
+
+        let statusBg = 'bg-emerald-500/10 border-emerald-500/40 text-emerald-400';
+        if (node.status === 'alert') statusBg = 'bg-amber-500/10 border-amber-500/40 text-amber-400 animate-pulse';
+        if (node.status === 'critical') statusBg = 'bg-rose-500/10 border-rose-500/40 text-rose-400 animate-pulse';
+
+        const nodeEl = document.createElement('div');
+        nodeEl.className = `p-3.5 rounded-xl border ${statusBg} backdrop-blur-sm flex flex-col items-center gap-1.5 transition`;
+        nodeEl.innerHTML = `
+          <i class="fa-solid ${iconClass} text-xl"></i>
+          <span class="font-bold text-xs font-mono text-slate-100">${node.name}</span>
+          <span class="text-[10px] font-mono text-slate-400">${node.detail}</span>
+        `;
+        container.appendChild(nodeEl);
+      });
+    }
+
+    function renderLogs(logs) {
+      const consoleEl = document.getElementById('console-logs');
+      consoleEl.innerHTML = logs.map(l => `<div class="mb-1 text-slate-300 font-mono">${l}</div>`).join('');
+      consoleEl.scrollTop = consoleEl.scrollHeight;
+    }
+
+    function selectChoice(choice) {
+      const expBox = document.getElementById('explanation-box');
+      const expText = document.getElementById('explanation-text');
+      const badge = document.getElementById('result-badge');
+
+      expBox.classList.remove('hidden');
+      expText.textContent = choice.feedback + " " + missions.find(x => x.id === gameState.currentMissionIndex).explanation;
+
+      if (choice.correct) {
+        playSound('success');
+        badge.textContent = "¡Estrategia Aprobada!";
+        badge.className = "px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
+
+        // Update telemetry state
+        if (choice.slaDelta) gameState.sla = Math.min(100, gameState.sla + choice.slaDelta);
+        if (choice.costDelta) gameState.cost = Math.max(100, gameState.cost + choice.costDelta);
+        if (choice.secDelta) gameState.security = Math.min(100, gameState.security + choice.secDelta);
+        if (choice.latDelta) gameState.latency = Math.max(10, gameState.latency + choice.latDelta);
+
+        updateMeters();
+
+        if (!gameState.completedMissions.includes(gameState.currentMissionIndex)) {
+          gameState.completedMissions.push(gameState.currentMissionIndex);
+          document.getElementById(`mod-status-${gameState.currentMissionIndex}`).className = "fa-solid fa-circle-check text-emerald-400 text-lg";
+        }
+
+        checkRankProgress();
+      } else {
+        playSound('alert');
+        badge.textContent = "Estrategia Deficiente";
+        badge.className = "px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30";
+      }
+    }
+
+    function nextMission() {
+      playSound('click');
+      if (gameState.currentMissionIndex < missions.length) {
+        loadMission(gameState.currentMissionIndex + 1);
+      } else {
+        showVictoryModal();
+      }
+    }
+
+    function updateMeters() {
+      document.getElementById('metric-sla').textContent = `${gameState.sla.toFixed(2)}%`;
+      document.getElementById('metric-cost').textContent = `$${gameState.cost} / mes`;
+      document.getElementById('metric-sec').textContent = `${gameState.security}%`;
+      document.getElementById('metric-latency').textContent = `${gameState.latency} ms`;
+    }
+
+    function checkRankProgress() {
+      const count = gameState.completedMissions.length;
+      const rankEl = document.getElementById('user-rank');
+      if (count === 1) rankEl.textContent = "Cloud Ops Technician";
+      if (count === 2) rankEl.textContent = "SysAdmin Specialist";
+      if (count === 3) rankEl.textContent = "Cloud Architect";
+      if (count === 4) rankEl.textContent = "Master SRE Cloud Hero";
+    }
+
+    function showVictoryModal() {
+      playSound('success');
+      document.getElementById('modal-victory').classList.remove('hidden');
+    }
+
+    function closeVictoryModal() {
+      document.getElementById('modal-victory').classList.add('hidden');
+      switchTab('simulator');
+    }
+
+    /* ====================================================================
+       REAL-TIME SIMULATOR ENGINE
+       ==================================================================== */
+    const simIncidentsPool = [
+      { type: 'traffic', msg: '🔥 Pico masivo de tráfico detectado (+500% peticiones).', cost: 100, lat: 200 },
+      { type: 'ddos', msg: '🛡️ Ataque DDoS con inyección de tráfico malicioso en curso.', sec: -20, lat: 150 },
+      { type: 'zombie', msg: '💸 8 Volúmenes EBS desasociados consumiendo presupuesto.', cost: 300 },
+      { type: 'fail', msg: '⚡ Caída del Datacenter us-east-1a (Single Point of Failure).', sla: -0.5, lat: 300 }
+    ];
+
+    function toggleSimulator() {
+      const btn = document.getElementById('sim-start-btn');
+      const badge = document.getElementById('sim-status-badge');
+
+      if (!gameState.simActive) {
+        gameState.simActive = true;
+        playSound('success');
+        btn.innerHTML = `<i class="fa-solid fa-pause"></i> Pausar Simulación`;
+        btn.className = "px-5 py-2 bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs rounded-xl shadow-lg transition flex items-center gap-2";
+        badge.textContent = "Estado: EN VIVO";
+        badge.className = "text-xs font-mono text-emerald-400 font-bold animate-pulse";
+
+        gameState.simInterval = setInterval(runSimTick, 2000);
+      } else {
+        gameState.simActive = false;
+        playSound('click');
+        btn.innerHTML = `<i class="fa-solid fa-play"></i> Reanudar Simulación`;
+        btn.className = "px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-lg transition flex items-center gap-2";
+        badge.textContent = "Estado: PAUSADO";
+        badge.className = "text-xs font-mono text-slate-500";
+
+        clearInterval(gameState.simInterval);
+      }
+    }
+
+    function runSimTick() {
+      gameState.simTime += 2;
+      const mins = String(Math.floor(gameState.simTime / 60)).padStart(2, '0');
+      const secs = String(gameState.simTime % 60).padStart(2, '0');
+      document.getElementById('sim-timer').textContent = `${mins}:${secs}`;
+
+      // Randomly spawn incident
+      if (Math.random() > 0.4) {
+        const inc = simIncidentsPool[Math.floor(Math.random() * simIncidentsPool.length)];
+        pushSimIncident(inc.msg);
+
+        if (inc.cost) gameState.cost += inc.cost;
+        if (inc.lat) gameState.latency += inc.lat;
+        if (inc.sec) gameState.security = Math.max(10, gameState.security + inc.sec);
+        if (inc.sla) gameState.sla = Math.max(90, gameState.sla + inc.sla);
+
+        playSound('alert');
+        updateMeters();
+      }
+
+      updateChart();
+    }
+
+    function pushSimIncident(text) {
+      const feed = document.getElementById('sim-incident-feed');
+      const item = document.createElement('div');
+      item.className = "p-3 bg-slate-950 border border-slate-800/90 rounded-xl font-mono text-xs text-slate-200 flex items-center justify-between animate-fadeIn";
+      item.innerHTML = `
+        <span class="flex items-center gap-2">${text}</span>
+        <span class="text-[10px] text-slate-500">${new Date().toLocaleTimeString()}</span>
+      `;
+      feed.prepend(item);
+      if (feed.children.length > 8) feed.removeChild(feed.lastChild);
+    }
+
+    function triggerSimAction(action) {
+      playSound('click');
+      if (!gameState.simActive) {
+        pushSimIncident("⚠️ Inicie la simulación antes de ejecutar mitigaciones de infraestructura.");
+        return;
+      }
+
+      if (action === 'autoscale') {
+        gameState.latency = Math.max(20, gameState.latency - 120);
+        gameState.cost += 40;
+        pushSimIncident("✅ [Auto-Scaling] Instancias adicionales desplegadas. Latencia reducida.");
+      } else if (action === 'waf') {
+        gameState.security = Math.min(100, gameState.security + 25);
+        pushSimIncident("🛡️ [WAF Rules] Reglas de inspección profunda aplicadas contra firmas de ataque.");
+      } else if (action === 'finops') {
+        gameState.cost = Math.max(300, gameState.cost - 250);
+        pushSimIncident("🧹 [FinOps Clean] Volúmenes huérfanos eliminados y snapshots archivados.");
+      } else if (action === 'failover') {
+        gameState.sla = Math.min(100, gameState.sla + 0.2);
+        pushSimIncident("🔄 [Multi-AZ Failover] Tráfico enrutado a zona con alta disponibilidad.");
+      }
+
+      updateMeters();
+      updateChart();
+    }
+
+    /* ====================================================================
+       CANVAS TELEMETRY GRAPH
+       ==================================================================== */
+    let chartCanvas, chartCtx;
+
+    function initChart() {
+      chartCanvas = document.getElementById('telemetryChart');
+      if (!chartCanvas) return;
+      chartCtx = chartCanvas.getContext('2d');
+      
+      // Auto adjust canvas bounds
+      chartCanvas.width = chartCanvas.parentElement.clientWidth;
+      chartCanvas.height = chartCanvas.parentElement.clientHeight;
+
+      if (gameState.telemetryHistory.length === 0) {
+        for (let i = 0; i < 20; i++) {
+          gameState.telemetryHistory.push({ lat: 45, cost: 1200 });
+        }
+      }
+      renderChart();
+    }
+
+    function updateChart() {
+      if (!chartCtx) return;
+      gameState.telemetryHistory.push({ lat: gameState.latency, cost: gameState.cost });
+      if (gameState.telemetryHistory.length > 25) gameState.telemetryHistory.shift();
+      renderChart();
+    }
+
+    function renderChart() {
+      if (!chartCtx) return;
+      const w = chartCanvas.width;
+      const h = chartCanvas.height;
+
+      chartCtx.clearRect(0, 0, w, h);
+
+      // Draw Grid lines
+      chartCtx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+      chartCtx.lineWidth = 1;
+      for (let y = 0; y < h; y += 30) {
+        chartCtx.beginPath();
+        chartCtx.moveTo(0, y);
+        chartCtx.lineTo(w, y);
+        chartCtx.stroke();
+      }
+
+      const step = w / (gameState.telemetryHistory.length - 1);
+
+      // Render Latency Line (Cyan)
+      chartCtx.beginPath();
+      chartCtx.strokeStyle = '#00c8ff';
+      chartCtx.lineWidth = 2;
+
+      gameState.telemetryHistory.forEach((pt, i) => {
+        const x = i * step;
+        const y = h - Math.min(h - 10, (pt.lat / 600) * h);
+        if (i === 0) chartCtx.moveTo(x, y);
+        else chartCtx.lineTo(x, y);
+      });
+      chartCtx.stroke();
+
+      // Render Cost Line (Amber)
+      chartCtx.beginPath();
+      chartCtx.strokeStyle = '#fbbf24';
+      chartCtx.lineWidth = 2;
+
+      gameState.telemetryHistory.forEach((pt, i) => {
+        const x = i * step;
+        const y = h - Math.min(h - 10, (pt.cost / 3000) * h);
+        if (i === 0) chartCtx.moveTo(x, y);
+        else chartCtx.lineTo(x, y);
+      });
+      chartCtx.stroke();
+    }
+
+    window.onresize = () => {
+      if (chartCanvas) {
+        chartCanvas.width = chartCanvas.parentElement.clientWidth;
+        chartCanvas.height = chartCanvas.parentElement.clientHeight;
+        renderChart();
+      }
+    };
+
+    /* INITIALIZATION ON WINDOW LOAD */
+    window.onload = function() {
+      loadMission(1);
+      updateMeters();
+    };
+  </script>
+</body>
+</html>
